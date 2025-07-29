@@ -1,0 +1,26 @@
+#include <DifferentialOperator.h>
+#include <TwoDimensionalIntegration.h>
+#include <OneDimensionalIntegration.h>
+#include <DiscreteSpace.h>
+#include <cassert>
+
+
+/**
+ * @brief: Differential operator on the given spaces (parent class). 
+ */
+DifferentialOperator::DifferentialOperator(const DiscreteSpaceOnCurve_1D &trialSpace, const DiscreteSpaceOnCurve_1D &testSpace) :
+    Operator(testSpace.getSize(), trialSpace.getSize()),
+    _trialSpace{trialSpace},
+    _testSpace{testSpace},
+    _integrator1D{nullptr},
+    _integrator2D{nullptr}
+{
+    assert(&(_trialSpace.getCurve()) == &(_testSpace.getCurve()));
+}
+
+/**
+ * @brief: Explicit destructor.
+ */
+DifferentialOperator::~DifferentialOperator(void)
+{
+}

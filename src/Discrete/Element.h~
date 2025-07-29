@@ -1,0 +1,11 @@
+#ifndef ELEMENT
+#define ELEMENT
+#include <MyTypes.h>
+
+
+class Element_1D {
+ public:
+ private:
+};
+
+#endif

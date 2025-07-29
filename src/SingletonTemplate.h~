@@ -1,0 +1,4 @@
+#ifndef SINGLETON_TEMPLATE
+#define SINGLETON_TEMPLATE
+
+#endif

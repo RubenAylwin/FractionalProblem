@@ -1,0 +1,150 @@
+#ifndef DISCRETE_TEST
+#define DISCRETE_TEST
+/*
+ *TESTS FOR DISCRETE SPACES
+ */
+#include <PECGrating.h>
+#include <DiscreteSpace.h>
+#include <Utilities.h>
+#include <Curve.h>
+#include <vector>
+#include <complex>
+#include <boost/test/execution_monitor.hpp>
+#include <cmath>
+#include <stdexcept>
+#include <Utilities.h>
+#include <OneDimensionalIntegration.h>
+#include <TwoDimensionalIntegration.h>
+#include <DiscreteSpaceMatrixMgr.h>
+#include <RegularP0.h>
+#include <Mesh.h>
+#include <RegularP0Mesh.h>
+namespace discreteTests{
+
+    static double tolerance = 1E-9;
+
+    BOOST_AUTO_TEST_SUITE(Discrete)
+    /*
+     *TEST FOR P0 SPACE
+     */
+    BOOST_AUTO_TEST_SUITE(P0)
+
+    BOOST_AUTO_TEST_CASE(ConstructorTest)
+    {
+        msg(1) << "start Discrete::P0::ConstructorTest" << endMsg;
+        TrigonometricCurve curve(1, 0, std::vector<double>{1}, std::vector<double>{0});
+        RegularP0_1D space(curve, 10);
+        msg(1) << "end Discrete::P0::ConstructorTest" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(ConstructorMeshTest)
+    {
+        msg(1) << "start Discrete::P0::ConstructorMeshTest" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(10, curve);
+        RegularP0Mesh_1D regular(mesh);
+        auto &fun = regular.basisFunction(0);
+        msg(1) << "end Discrete::P0::ConstructorMeshTest" << endMsg;
+    }
+    
+    BOOST_AUTO_TEST_CASE(EvaluationTest)
+    {
+        msg(1) << "start Discrete::P0::EvaluationTest" << endMsg;
+        TrigonometricCurve curve(1, 0, std::vector<double>{1}, std::vector<double>{0});
+        RegularP0_1D space(curve, 10);
+
+        auto &firstFun = space.basisFunction(0);
+        BOOST_CHECK_CLOSE(1/curve.jacobian(0.05), firstFun(0.05).real(), tolerance);
+        BOOST_CHECK_CLOSE(0, firstFun(0.15).real(), tolerance);
+
+        auto &lastFun = space.basisFunction(9);
+        BOOST_CHECK_CLOSE(0, lastFun(0.05).real(), tolerance);
+        BOOST_CHECK_CLOSE(1/curve.jacobian(0.95), lastFun(0.95).real(), tolerance);
+        msg(1) << "end Discrete::P0::EvaluationTest" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(InvalidFunctionTest)
+    {
+        msg(1) << "start Discrete::P0::InvalidFunctionTest" << endMsg;
+        TrigonometricCurve curve(1, 0, std::vector<double>{1}, std::vector<double>{0});
+        RegularP0_1D space(curve, 10);
+
+        BOOST_REQUIRE_THROW(space.basisFunction(10), std::invalid_argument);
+        msg(1) << "end Discrete::P0::InvalidFunctionTest" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(TestingConstantFunction)
+    {
+        msg(1) << "start Discrete::P0::TestingConstantFunction" << endMsg;
+        TrigonometricCurve curve(1, 0, std::vector<double>{1}, std::vector<double>{0});
+        RegularP0_1D space(curve, 20);
+        ExplicitScalarFunction_1D function([&](double t){ return 1.*curve.jacobian(t);});
+        auto testingResult = space.testAgainstBasis(function);
+        for (const auto val : testingResult) {
+            BOOST_CHECK_CLOSE(val.real(), 1.0/20, tolerance);
+        }
+        msg(1) << "end Discrete::P0::TestingConstantFunction" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(TestingP0DOFs)
+    {
+        msg(1) << "start Discrete::P0::TestignP0DOFs" << endMsg;
+        TrigonometricCurve curve(1, 0, std::vector<double>{1}, std::vector<double>{0});
+        unsigned sizeOfSpace = 30;
+        RegularP0_1D space(curve, sizeOfSpace);
+        for (unsigned i = 0; i < sizeOfSpace; ++i) {
+            auto &function = space.basisFunction(i);
+            for (unsigned j = 0; j < sizeOfSpace; ++j) {
+                auto &DoF = space.degreeOfFreedom(j);
+                BOOST_CHECK_CLOSE(std::real(DoF(function)), (i == j ? 1 : 0), tolerance);
+            }
+        }
+        msg(1) << "end Discrete::P0::TestignP0DOFs" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(RHSVectorTest, * boost::unit_test::disabled())
+    {
+        msg(1) << "start Discrete::P0::RHSVectorTest" << endMsg;
+        TrigonometricCurve curve(1, 0, std::vector<double>{1}, std::vector<double>{0});
+        for (unsigned i = 0; i < 10; ++i) {
+            unsigned sizeOfSpace = 10*std::pow(4, i);
+            RegularP0_1D space(curve, sizeOfSpace);
+            auto pw = BEM::generatePlaneWave(0.0, 1.0, curve);
+            auto vec = space.testAgainstBasis(*pw);
+        }
+        msg(1) << "end Discrete::P0::RHSVectorTest" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(SolConv, * boost::unit_test::disabled())
+    {
+        msg(1) << "start Discrete::P0::SolConv" << endMsg;
+        TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0.06682242991});
+        int OKDOF = 1200;
+        PECGrating OK(new TrigonometricCurve(curve), 0.7853981634, 0.14672897, OKDOF, 2);
+        OK.buildDiscrete();
+        auto Matrix = OK.getMatrix();
+        OK.solve();
+        auto &matrixMgr = DiscreteSpaceMatrixMgr_1D::get();
+        RegularP1_1D fine(curve, OKDOF);
+        for (int i = 1; i < 7; ++i) {
+            unsigned sizeOfSpace = 100*i;
+            RegularP1_1D coarse(curve, sizeOfSpace);
+            auto LHFC = matrixMgr.getData(fine, coarse);
+            PECGrating prob(new TrigonometricCurve(curve), 0.7853981634, 0.14672897, sizeOfSpace, 2);
+            prob.buildDiscrete();
+            prob.solve();
+            auto errorVec = LHFC*prob.getSolutionVec() - OK.getSolutionVec();
+            std::cout << std::sqrt(std::abs((Matrix*errorVec).dot(errorVec))) << std::endl;
+            std::cout << LHFC.rows() << "x" << LHFC.cols() << std::endl;
+            std::cout << Matrix.rows() << "x" << Matrix.cols() << std::endl;
+        }
+        
+        msg(1) << "end Discrete::P0::SolConv" << endMsg;
+    }
+
+    
+    BOOST_AUTO_TEST_SUITE_END()
+
+    BOOST_AUTO_TEST_SUITE_END()
+}
+#endif

@@ -1,0 +1,27 @@
+#ifndef PEC_GRATING_REDUCED_ML
+#define PEC_GRATING_REDUCED_ML
+
+#include <PECGratingReduced.h>
+#include <MyTypes.h>
+#include <memory>
+#include <vector>
+#include <random>
+
+
+class UQProblemFactoryReducedML : public UQProblemFactoryReduced
+{
+public:
+    UQProblemFactoryReducedML(double period, double angle, double wavenumber, double pertSize, int dimDecay, std::vector<unsigned> numElementsVector, std::vector<double> sineCoefficients, std::vector<double> cosineCoefficients, unsigned greenTerms = 50U);
+    ~UQProblemFactoryReducedML();
+    std::unique_ptr<Problem> generateNewProblem(unsigned counter) const override;
+    void trainEmpirical(unsigned samples, double tolerance = 1E-6) override;
+    void trainEmpirical(unsigned samples, unsigned bases) override;
+private:
+    void initializeSVD(void) override;
+    void saveEIData(void) override;
+    std::vector<unsigned> _numElementsVector;
+}
+
+
+
+#endif

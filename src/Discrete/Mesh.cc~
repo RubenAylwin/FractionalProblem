@@ -1,0 +1,53 @@
+#include <Mesh.h>
+#include <Msg.h>
+#include <Element.h>
+#include <Curve.h>
+#include <Point.h>
+
+useMessages("MESH");
+
+Mesh1D::Mesh1D(unsigned numElements) :
+    _numElem{numElements},
+    _points(numElements + 1, std::shared_ptr<Point2D>(nullptr)),
+    _elements(numElements, std::shared_ptr<MeshElement1D>(nullptr))
+{
+}
+
+const MeshElement1D &Mesh1D::elementFromBPoint(unsigned i) const
+{
+    unsigned index = (i >= 1) ? i - 1 : _numElem - 1;
+    return *(_elements[index]);
+}
+
+const MeshElement1D &Mesh1D::elementFromAPoint(unsigned i) const
+{
+    unsigned index = (i <= _numElem) ? i : 0;
+    return *(_elements[index]);
+}
+
+const Point2D &Mesh1D::point(unsigned i) const
+{
+    unsigned index = (i <= _numElem) ? i : 0;
+    return *(_points[index]);
+}
+
+MeshCurve1D::MeshCurve1D(unsigned numElements, Curve2D &curve) :
+    Mesh1D(numElements),
+    _curve{curve}
+{
+    double length = (_curve.getUppLim() - _curve.getLowLim())/numElements;
+    double a = _curve.getLowLim();
+    double b = a + length;
+    for (unsigned i = 0; i < numElements; ++i) {
+        _elements[i].reset(new MeshElement1D(i, _curve.at(a), _curve.at(b)));
+        _points[i].reset(new Point2D(_curve.at(a)));
+        msg(5) << "Inserted element with points " << _curve.at(a) << " and " << _curve.at(b) << endMsg;
+        a = b;
+        b = a + length;
+    }
+    _points[numElements].reset(new Point2D(_curve.at(a)));
+    assert(_elements.back());
+    assert(_points.back());
+    assert((*(_points.back()) - _curve.at(_curve.getUppLim())).norm() < 1E-7);
+    assert((*(_points.front()) - _curve.at(_curve.getLowLim())).norm() < 1E-7);
+}

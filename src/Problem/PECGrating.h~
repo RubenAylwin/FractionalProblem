@@ -1,0 +1,30 @@
+#ifndef PEC_GRATING
+#define PEC_GRATING
+
+#include <ParametricProblem.h>
+#include <MyTypes.h>
+#include <memory>
+#include <vector>
+#include <random>
+
+
+class WeaklySingular;
+class EmpiricalInterpolation;
+class Identity;
+class DiscreteSpace_1D;
+class DiscreteSpaceOnCurve_1D;
+class Operator;
+class Curve2D;
+
+
+class PECGrating : public QPProblem {
+public:
+    PECGrating(Curve2D curve, unsigned numElements, unsigned greenTerms);
+    void buildDiscrete(void) override;
+    virtual double efficiency(int mode) const;
+private:
+    std::unique_ptr<DiscreteSpace_1D> _space = nullptr;
+    std::unique_ptr<Curve2D> _curve = nullptr;
+};
+
+#endif

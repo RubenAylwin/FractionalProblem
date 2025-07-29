@@ -1,0 +1,24 @@
+#include <PECGratingReducedML.h>
+#include <EmpiricalInterpolation.h>
+#include <Utilities.h>
+#include <iostream>
+#include <progressbar.hpp>
+#include <DiscreteSpaceMatrixMgr.h>
+#include <DiscreteSpace.h>
+#include <GreenQP.h>
+#include <IntegralOperator.h>
+#include <Msg.h>
+
+useMessages("UQ_RB_ML_PROB");
+
+UQProblemFactoryReducedML::UQProblemFactoryReducedML(double period, double angle, double wavenumber, double pertSize, int dimDecay, std::vector<unsigned> numElementsVector, std::vector<double> sineCoefficients, std::vector<double> cosineCoefficients, unsigned greenTerms):
+    UQProblemFactoryReduced(period, angle, wavenumber, pertSize, dimDecay, numElementsVector.back(), sineCoefficients, cosineCoefficients, greenTerms),
+    _numElementsVector{numElementsVector}
+{
+    
+}
+
+
+UQProblemFactoryReducedML::~UQProblemFactoryReducedML(void)
+{
+}

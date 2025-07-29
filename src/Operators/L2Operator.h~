@@ -1,0 +1,16 @@
+#ifndef L2_OPERATOR
+#define L2_OPERATOR
+
+#include <ScalarValuedFunction.h>
+
+class L2 : public DifferentialOperator
+{
+public:
+    L2(ExplicitScalarValuedFunction_1D function, const DiscreteSpaceOnCurve_1D &trialSpace, DiscreteSpaceOnCurve_1D &testSpace);
+    void assembleMassMatrix(void) override;
+private:
+    ExplicitScalarValuedFunction_1D _kernel;
+    BEM::Complex indexedDuality(const unsigned i, const unsigned j) override;
+}
+
+#endif

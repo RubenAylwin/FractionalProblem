@@ -1,0 +1,32 @@
+#ifndef MESH
+#define MESH
+
+#include <vector>
+#include <memory>
+#include <unordered_map>
+
+class MeshElement1D;
+class Curve2D;
+class Point2D;
+class Mesh1D {
+public:
+    virtual const MeshElement1D &elementFromBPoint(unsigned i) const;
+    virtual const MeshElement1D &elementFromAPoint(unsigned i) const;
+    virtual const MeshElement1D &getElement(unsigned i) const {return *_elements[i];}
+    virtual const Point2D &point(unsigned i) const;
+    virtual unsigned numElements(void) const {return _numElem;}
+protected:
+    Mesh1D(unsigned numElements);
+    unsigned _numElem = 0U;
+    std::vector<std::shared_ptr<Point2D>> _points;
+    std::vector<std::shared_ptr<MeshElement1D>> _elements;
+};
+
+class MeshCurve1D : public Mesh1D {
+public:
+    MeshCurve1D(unsigned numElements, Curve2D &curve);
+private:
+    Curve2D &_curve;
+};
+
+#endif

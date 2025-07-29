@@ -1,0 +1,62 @@
+#ifndef RIEMANN_LIOUVILLE
+#define RIEMANN_LIOUVILLE
+
+#include <MyTypes.h>
+#include <DifferentialOperator.h>
+#include <vector>
+#include <mutex>
+#include <memory>
+
+class DiscreteSpaceOnCurve_1D;
+class ScalarFunctionBase_1D;
+class ExplicitScalarFunction_2D;
+class ExplicitScalarFunction_1D;
+class Integrator_1D;
+
+//////////////////////////////////
+// Riemann liouville operators. //
+//////////////////////////////////
+
+/**
+ * @brief: Riemman Liouville operator (LeftDer*RightDer). DEPRECATED in favour of mesh version.
+ */
+class RiemannLiouville : public DifferentialOperator {
+public:
+    enum Side {
+        LEFT,
+        RIGHT
+    };
+    RiemannLiouville(const DiscreteSpaceOnCurve_1D &space, Side side, double order, ExplicitScalarFunction_1D dFun);
+    ScalarFunctionBase_1D *getLeftHalfDer(unsigned baseNumber);
+    ScalarFunctionBase_1D *getRightHalfDer(unsigned baseNumber);
+    BEM::Complex indexedDuality(const unsigned i, const unsigned j) override;
+private:
+    const Side _side;
+    const double _order;
+    const double _gamma = 0.0;
+    std::unique_ptr<ExplicitScalarFunction_2D> _kernel=nullptr;
+    std::unique_ptr<Integrator_1D> _integrator1D2 = nullptr;
+    std::vector<std::unique_ptr<ScalarFunctionBase_1D>> _leftDerivatives;
+    std::vector<std::unique_ptr<ScalarFunctionBase_1D>> _rightDerivatives;
+    std::shared_ptr<ExplicitScalarFunction_1D> _dFun=nullptr;
+};
+
+/**
+ * @brief: Riemman Liouville operator (LeftDer*RightDer).
+ */
+class RiemannLiouvilleMesh : public DifferentialOperatorMesh {
+public:
+    enum Side {
+        LEFT,
+        RIGHT
+    };
+    RiemannLiouvilleMesh(const DiscreteSpaceMesh &space, Side side, int order, ExplicitScalarFunction_1D dFun, ExplicitScalarFunction_1D qFun);
+    BEM::Complex indexedDuality(const unsigned i, const unsigned j) override;
+private:
+    const Side _side;
+    const int _order;
+    std::shared_ptr<ExplicitScalarFunction_1D> _dFun=nullptr;
+    std::shared_ptr<ExplicitScalarFunction_1D> _qFun=nullptr;
+};
+
+#endif

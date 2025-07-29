@@ -1,0 +1,18 @@
+#include <UQHoloProblem.h>
+#include <DiscreteSpace.h>
+#include <WeaklySingular.h>
+#include <Curve.h>
+#include <GreenQP.h>
+#include <cmath>
+#include <Utilities.h>
+#include <cassert>
+#include <iostream>
+#include <Identity.h>
+#include <EmpiricalInterpolation.h>
+#include <DiscreteSpaceMatrixMgr.h>
+#include <MultiLevelIntegralOperator.h>
+
+#include <Msg.h>
+
+
+useMessages("UQ_PROB");

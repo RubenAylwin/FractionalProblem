@@ -1,0 +1,62 @@
+#include <DiscreteSpaceMesh.h>
+#include <algorithm>
+#include <cmath>
+#include <stdexcept>
+#include <iostream>
+#include <ScalarValuedFunction.h>
+#include <OneDimensionalIntegration.h>
+#include <TwoDimensionalIntegration.h>
+#include <MyTypes.h>
+#include <Utilities.h>
+#include <Msg.h>
+useMessages("DISC_SPACE_MESH");
+
+
+DiscreteSpaceMesh::DiscreteSpaceMesh(const Mesh1D &mesh) :
+    _mesh{mesh},
+    _integrator1D(nullptr),
+    _integrator2D(nullptr)
+{
+}
+
+DiscreteSpaceMesh::~DiscreteSpaceMesh(void)
+{
+}
+
+BEM::ColVector DiscreteSpaceMesh::projectFunctionL2(const ScalarFunctionBase_2D &function) const
+{
+    auto matrix = L2IdentityOp();
+    auto rhs = testAgainstBasis(function);
+
+    BEM::ColVector solutionV = matrix.colPivHouseholderQr().solve(rhs);
+    return solutionV;
+}
+
+DiscreteFunctionMeshPtr DiscreteSpaceMesh::generateFunction(const BEM::ColVector &coefficients) const
+{
+    std::vector<BEM::Complex> functionVector(coefficients.size(), 0);
+    for (int i = 0; i < coefficients.size(); ++i) {
+        functionVector[i] = coefficients[i];
+    }
+    return generateFunction(functionVector);
+}
+
+
+/**
+ * @brief: Given a scalar function, test it against the basis and return the vector.
+ * @Assumption: The domain of the given function is [0, 1]
+ */
+BEM::ColVector DiscreteSpaceMesh::testAgainstBasis(const ScalarFunctionBase_2D &function) const
+{
+    auto size = getSize();
+    BEM::ColVector result(size);
+    for (unsigned i = 0; i < size; ++i) {
+        result[i] = testAgainstBaseElement(function, i);
+    }
+    return result;    
+}
+
+DiscreteFunctionMesh::DiscreteFunctionMesh(const Mesh1D &mesh) :
+    _mesh{mesh}
+{
+}

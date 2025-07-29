@@ -1,0 +1,75 @@
+#ifndef MULTI_LEVEL_OPERATOR
+#define MULTI_LEVEL_OPERATOR
+
+#include <IntegralOperator.h>
+#include <Identity.h>
+#include <MyTypes.h>
+#include <Utilities.h>
+#include <memory>
+
+class DiscreteSpaceOnCurve_1D;
+class DiscreteFunction_1D;
+class Integrator_1D;
+class Integrator_2D;
+class GreenFunction2D;
+
+class MultiLevelIntegralOperator : public Operator
+{
+public:
+    MultiLevelIntegralOperator(const DiscreteSpaceOnCurve_1D &fineTrialSpace, const DiscreteSpaceOnCurve_1D &fineTestSpace, const DiscreteSpaceOnCurve_1D &coarseTrialSpace, const DiscreteSpaceOnCurve_1D &coarseTestSpace);
+    virtual ~MultiLevelIntegralOperator();
+    
+protected:
+    const DiscreteSpaceOnCurve_1D &_fineTrialSpace;
+    const DiscreteSpaceOnCurve_1D &_fineTestSpace;
+    const DiscreteSpaceOnCurve_1D &_coarseTrialSpace;
+    const DiscreteSpaceOnCurve_1D &_coarseTestSpace;
+};
+
+template <typename OperatorType>
+class MultiLevelBEMOperator : public MultiLevelIntegralOperator
+{
+public:
+    MultiLevelBEMOperator(const DiscreteSpaceOnCurve_1D &fineTrialSpace, const DiscreteSpaceOnCurve_1D &fineTestSpace, const DiscreteSpaceOnCurve_1D &coarseTrialSpace, const DiscreteSpaceOnCurve_1D &coarseTestSpace, const GreenFunction2D &greenFunc);
+    BEM::Complex indexedDuality(const unsigned i, const unsigned j) override;
+    void assembleMassMatrix(void) override;
+private:
+    OperatorType _fineOperator;
+    OperatorType _coarseOperator;
+    Identity _coarseTrial;
+    Identity _coarseTest;
+    Identity _fineToCoarseTrial;
+    Identity _fineToCoarseTest;
+};
+
+template <typename OperatorType>
+MultiLevelBEMOperator<OperatorType>::MultiLevelBEMOperator(const DiscreteSpaceOnCurve_1D &fineTrialSpace, const DiscreteSpaceOnCurve_1D &fineTestSpace, const DiscreteSpaceOnCurve_1D &coarseTrialSpace, const DiscreteSpaceOnCurve_1D &coarseTestSpace, const GreenFunction2D &greenFunc) :
+    MultiLevelIntegralOperator(fineTrialSpace, fineTestSpace, coarseTrialSpace, coarseTestSpace),
+    _fineOperator(_fineTrialSpace, _fineTestSpace, greenFunc),
+    _coarseOperator(_coarseTrialSpace, _coarseTestSpace, greenFunc),
+    _coarseTrial(_coarseTrialSpace, _coarseTrialSpace),
+    _coarseTest(_coarseTestSpace, _coarseTestSpace),
+    _fineToCoarseTrial(_fineTrialSpace, _coarseTrialSpace),
+    _fineToCoarseTest(_fineTestSpace, _coarseTestSpace)
+{
+}
+
+template <typename OperatorType>
+void MultiLevelBEMOperator<OperatorType>::assembleMassMatrix(void)
+{
+    _fineOperator.assembleMassMatrix();
+    _coarseOperator.assembleMassMatrix();
+    _coarseTrial.assembleMassMatrix();
+    _coarseTest.assembleMassMatrix();
+    _fineToCoarseTrial.assembleMassMatrix();
+    _fineToCoarseTest.assembleMassMatrix();
+}
+
+template <typename OperatorType>
+BEM::Complex MultiLevelBEMOperator<OperatorType>::indexedDuality(const unsigned i, const unsigned j)
+{
+    assert(false and "not implemented yet");
+    return 0.0;
+}
+
+#endif

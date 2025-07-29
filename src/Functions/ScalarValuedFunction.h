@@ -1,0 +1,126 @@
+#ifndef SCALAR_VALUED_FUNCTION
+#define SCALAR_VALUED_FUNCTION
+#include <MyTypes.h>
+#include <Point.h>
+#include <memory>
+#include <functional>
+
+/////////////////////////////////////////////
+// Code for managing function type classes //
+/////////////////////////////////////////////
+
+//Forward declarations
+class Curve2D;
+class ScalarFunctionBase_2D;
+class ScalarFunctionBase_1D;
+
+//Typedef
+using ScalarFunctionBasePtr_1D = std::unique_ptr<ScalarFunctionBase_1D>;
+using ScalarFunctionBasePtr_2D = std::unique_ptr<ScalarFunctionBase_2D>;
+
+
+/**
+ * @brief: Base class for a function that can be evaluated on one variable.
+ */
+  
+class ScalarFunction {
+public:
+    virtual BEM::Complex operator()(double t) const = 0;
+    ScalarFunction(void) = default;
+    virtual ~ScalarFunction(void) = default;
+};
+
+
+/**
+ * @brief: Base class for a function that can be evaluated on one variable.
+ */
+class ScalarFunctionBase_1D {
+public:
+    virtual BEM::Complex operator()(double t) const = 0;
+    virtual ScalarFunctionBasePtr_1D operator*(const ScalarFunctionBase_1D &other) const;
+    virtual ScalarFunctionBasePtr_1D operator*(const BEM::Complex scalar) const;
+    virtual ScalarFunctionBasePtr_1D operator+(const ScalarFunctionBase_1D &other) const;
+    virtual ~ScalarFunctionBase_1D(void);
+    virtual BEM::Interval1D support(void) const = 0;
+    virtual const BEM::Support1DL &brokenSupport(void) const = 0; 
+    static ScalarFunctionBasePtr_2D tensor(const ScalarFunctionBase_1D &first, const ScalarFunctionBase_1D &second);
+};
+
+
+/**
+ * @brief: Specialization build from a lambda (BEM::OneDimFunction) function.
+ */
+class ExplicitScalarFunction_1D : public ScalarFunctionBase_1D {
+public:
+    ExplicitScalarFunction_1D(BEM::OneDimFunction &&function) : _function(function), _brokenSupport(BEM::Interval1D(std::numeric_limits<double>::min(), std::numeric_limits<double>::max())) {};
+    BEM::Complex operator()(double t) const override;
+    ExplicitScalarFunction_1D operator+(const ExplicitScalarFunction_1D &other)  {
+        return ExplicitScalarFunction_1D([&](double t) ->BEM::Complex {return this->_function(t) + other(t);});
+    }
+    ExplicitScalarFunction_1D operator*(const BEM::Complex &scalar) {
+        return ExplicitScalarFunction_1D([&](double t) ->BEM::Complex {return this->_function(t)*scalar;});
+    }
+
+    BEM::Interval1D support(void) const override;
+    const BEM::Support1DL &brokenSupport(void) const override {return _brokenSupport;};
+protected:
+    std::function<BEM::Complex (double t)> _function;
+    const BEM::Support1DL _brokenSupport;
+};
+
+
+/**
+ * @brief: Specialization representing a function belonging to the boundary of some curve.
+ */
+class BoundaryScalarTrace_1D : public ExplicitScalarFunction_1D {
+public:
+    BoundaryScalarTrace_1D(BEM::OneDimFunction &&function, const Curve2D &curve);
+protected:
+    const Curve2D &_curve;
+};
+
+/**
+ * @brief: Specialization representing the restriction of a 2D-function to some curve.
+ */
+class BoundaryScalarRestriction_1D : public BoundaryScalarTrace_1D {
+public:
+    BoundaryScalarRestriction_1D(BEM::TwoDimFunction &&function, const Curve2D &curve);
+private:
+    BEM::TwoDimFunction _function;
+};
+
+/**
+ * @brief: Base class for a function that can be evaluated on two variables.
+ */
+class ScalarFunctionBase_2D {
+ public:
+    virtual BEM::Complex operator()(const double t, const double s) const = 0;
+    virtual ~ScalarFunctionBase_2D() = default;
+    virtual ScalarFunctionBasePtr_2D operator*(const ScalarFunctionBase_2D &other) const;
+};
+
+/**
+ * @brief: Class for a 2-D function that is given by a lambda.
+ */
+class ExplicitScalarFunction_2D : public ScalarFunctionBase_2D {
+public:
+    ExplicitScalarFunction_2D(BEM::TwoDimFunction &&function) : _function(function) {};
+    BEM::Complex operator()(const double t, const double s) const override;
+private:
+    BEM::TwoDimFunction _function;
+};
+
+/**
+ * @brief: Class for a Transformation from a domain onto a domain. Given as a lambda mapping Point2D to Point2D.
+ */
+class Transformation_2D {
+ public:
+    Transformation_2D(BEM::Transformation &&transformation) : _transformation(transformation) {}
+    virtual ~Transformation_2D() = default;
+    virtual Point2D operator()(const Point2D t) const {return _transformation(t);}
+private:
+    BEM::Transformation _transformation;
+};
+
+
+#endif

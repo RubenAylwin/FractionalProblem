@@ -1,0 +1,203 @@
+#include <RiemannLiouville.h>
+#include <TwoDimensionalIntegration.h>
+#include <OneDimensionalIntegration.h>
+#include <DiscreteSpace.h>
+#include <ScalarValuedFunction.h>
+#include <iostream>
+#include <ranges>
+#include <Utilities.h>
+#include <Msg.h>
+#include <set>
+
+useMessages("RIE_OP");
+
+/**
+ * @brief: Constructor
+ */
+RiemannLiouville::RiemannLiouville(const DiscreteSpaceOnCurve_1D &space, Side side, double order, ExplicitScalarFunction_1D dFun):
+    DifferentialOperator(space, space),
+    _side{side},
+    _order{order},
+    _gamma{std::tgamma(1-order*0.5)},
+    _dFun(new ExplicitScalarFunction_1D(dFun))
+{
+    _kernel.reset(new ExplicitScalarFunction_2D([this](double x, double t) {
+        return std::pow(x - t, -1.*this->_order/2.);
+    }));
+    assert(_order < 2 and _order > 1);
+    _integrator2D.reset(new GaussLegendre_2D<5, 4>());
+    _integrator1D.reset(new GaussLegendre_1D(5));
+}
+
+/**
+ * @brief: Compute the left derivative (more or less analytically).
+ * @output: A (somewhat) smooth function.
+ */
+ScalarFunctionBase_1D *RiemannLiouville::getLeftHalfDer(unsigned baseNumber)
+{
+    auto &basisFunction = _trialSpace.basisFunction(baseNumber);
+    auto &basisDerivative = *basisFunction.derivative();
+    auto leftHalfDer = [&basisFunction, &basisDerivative, this] (double x) -> BEM::Complex {        
+        double rightAnchor = 0;
+        BEM::Complex result = 0.0;
+        double lastLimit = 0;
+        double epsilon = 1e-6;
+
+        ExplicitScalarFunction_1D integrand([this, &basisDerivative, &rightAnchor, &epsilon, x](double t) {
+            return (basisDerivative(t) - basisDerivative(rightAnchor-epsilon))*this->_kernel->operator()(x, t);
+        });
+        bool broke = false;
+        for (const auto interval : basisFunction.brokenSupport()) {
+            rightAnchor = interval.second;
+            epsilon = (interval.second - interval.first)/10;
+            if(interval.second >= x) {
+                broke = true;
+                lastLimit = interval.first;
+                break;
+            }
+            result += _integrator1D->integrate(interval, integrand) +
+                basisDerivative(rightAnchor-epsilon)*(std::pow(x - interval.first, 1.-_order*0.5) - std::pow(x - interval.second, 1.-_order*0.5))/(1. - _order/2);
+        }
+        
+        if ((not broke) or x <= lastLimit) {
+            return result/_gamma;
+        }
+
+        // x should not be an interval limit
+        ExplicitScalarFunction_1D integrandSmooth([this, &basisDerivative, &rightAnchor, epsilon, x](double t) {
+            return (basisDerivative(t) - basisDerivative(rightAnchor-epsilon))*this->_kernel->operator()(x, t);
+        });
+        auto integralResult = _integrator1D->integrate(lastLimit, x, integrandSmooth);
+        result += integralResult + basisDerivative(rightAnchor-epsilon)*std::pow(x - lastLimit, 1.-_order*0.5)/(1. - _order/2);
+        return result/_gamma;
+    };
+    return new ExplicitScalarFunction_1D(leftHalfDer);
+}
+
+/**
+ * @brief: Compute the right derivative (more or less analytically).
+ * @output: A (somewhat) smooth function.
+ */
+ScalarFunctionBase_1D *RiemannLiouville::getRightHalfDer(unsigned baseNumber)
+{
+    auto &basisFunction = _trialSpace.basisFunction(baseNumber);
+    auto &basisDerivative = *basisFunction.derivative();
+    auto rightHalfDer = [&basisFunction, &basisDerivative, this] (double x) -> BEM::Complex {
+        double leftAnchor = 0;
+        BEM::Complex result = 0.0;
+        double lastLimit = 0;
+        double epsilon = 1e-6;
+
+        ExplicitScalarFunction_1D integrand([this, &basisDerivative, &leftAnchor, &epsilon, x](double t) {
+            return (basisDerivative(t) - basisDerivative(leftAnchor+epsilon))*this->_kernel->operator()(t, x);
+        });
+        bool broke = false;
+        for (const auto interval : basisFunction.brokenSupport() | std::views::reverse) {
+            leftAnchor = interval.first;
+            epsilon = (interval.second - interval.first)/10;
+            if(interval.first <= x) {
+                broke = true;
+                lastLimit = interval.second;
+                break;
+            }
+            result += _integrator1D->integrate(interval, integrand) + 
+                basisDerivative(leftAnchor+epsilon)*(-std::pow(interval.first - x, 1.-_order*0.5) + std::pow(interval.second - x, 1.-_order*0.5))/(1. - _order/2);
+        }
+        if ((not broke) or x >= lastLimit) {
+            return result/_gamma;
+        }
+
+        // x should not be an interval limit
+        ExplicitScalarFunction_1D integrandSmooth([this, &basisDerivative, &leftAnchor, epsilon, x](double t) {
+            return (basisDerivative(t) - basisDerivative(leftAnchor+epsilon))*this->_kernel->operator()(t, x);
+        });
+        auto integralResult = _integrator1D->integrate(x, lastLimit, integrandSmooth);
+        result += integralResult + basisDerivative(leftAnchor+epsilon)*std::pow(lastLimit - x, 1.-_order*0.5)/(1. - _order/2);
+        return result/_gamma;
+    };
+    return new ExplicitScalarFunction_1D(rightHalfDer);
+}
+
+/**
+ * @brief: Compute the product between left and right derivatives.
+ * The duality vocabulary is a remnant from the initial implementation that was intended for BEM.
+ */
+BEM::Complex RiemannLiouville::indexedDuality(const unsigned i, const unsigned j)
+{
+    auto trialjPtr = getLeftHalfDer(_side == Side::LEFT ? j : i);
+    auto testiPtr = getRightHalfDer(_side == Side::LEFT ? i : j);                                           
+    auto &testi = *testiPtr;
+    auto &trialj = *trialjPtr;
+    auto bsi = _trialSpace.basisFunction(i).brokenSupport();
+    auto bsj = _trialSpace.basisFunction(j).brokenSupport();
+    const auto &partition = _testSpace.getPartition();
+    BEM::Complex result = 0.0;
+    for (size_t p = 0; p < partition.size() - 1; p++) {
+        result += _integrator1D->integrate(partition[p], partition[p+1], *((trialj)*(testi))*(*_dFun));
+    }
+    return result;
+}
+
+/**
+ * @brief: Constructor.
+ */
+RiemannLiouvilleMesh::RiemannLiouvilleMesh(const DiscreteSpaceMesh &space, Side side, int order, ExplicitScalarFunction_1D dFun, ExplicitScalarFunction_1D qFun):
+    DifferentialOperatorMesh(space, space),
+    _side{side},
+    _order{order},
+    _dFun(new ExplicitScalarFunction_1D(dFun)),//diffusion coef
+    _qFun(new ExplicitScalarFunction_1D(qFun))//reaction coef
+{
+    _integrator1D.reset(new GaussLegendre_1D(5));//Hardcoded. Should be enough (maybe even 2 in enough).
+}
+
+/**
+ * @brief: Same as before.
+ */
+BEM::Complex RiemannLiouvilleMesh::indexedDuality(const unsigned i, const unsigned j)
+{
+    auto &test = _testSpace.basisFunction(i);
+    auto &trial = _trialSpace.basisFunction(j);
+    int signChanger = 1;
+    if (_side == Side::RIGHT) {
+        signChanger = -1;
+    }
+    auto &testR = test.derivative(-1*signChanger*_order);
+    auto &trialL = trial.derivative(signChanger*_order);
+    auto &mesh = _testSpace.getMesh();
+    BEM::Complex result = 0.0;
+    auto integrationElementSize = mesh.getElement(0).getSize();
+    unsigned l = 0;
+
+    // Diffusion
+    ExplicitScalarFunction_1D integrand([&](double t) {
+        auto point = mesh.getElement(l)(t);
+        return -1.*testR.evaluate(l, t)*trialL.evaluate(l, t)*integrationElementSize*(*_dFun)(point.getX());
+    }
+        );
+    // Reaction
+    ExplicitScalarFunction_1D integrandQ([&](double t) {
+        auto point = mesh.getElement(l)(t);
+        return test.evaluate(l, t)*trial.evaluate(l, t)*integrationElementSize*(*_qFun)(point.getX());
+    }
+        );
+
+    // Right now we integrate over all elements, but we know that the integration domain is less that this.
+    for ( ; l < mesh.numElements(); ++l) {
+        integrationElementSize = mesh.getElement(l).getSize();
+        result += _integrator1D->integrate(0, 1, integrand);
+    }
+
+    // Here we are assuming that if the element numbering is more than 1, then they do not share support.
+    // If we ever implement 2nd order elements this will be false.
+    int dif = i - j;
+    if (std::abs(dif) > 1) {
+        return result;
+    }
+    for (const auto &sup : test.support()) {
+        l=sup;
+        integrationElementSize = mesh.getElement(l).getSize();
+        result += _integrator1D->integrate(0, 1, integrandQ);
+    }
+    return result;
+}

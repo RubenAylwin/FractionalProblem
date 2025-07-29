@@ -1,0 +1,11 @@
+#ifndef BASIS_FUNC_ABSTRACT
+#define BASIS_FUNC_ABSTRACT
+
+#include <Point.h>
+
+class BasisFunction {
+ public:
+    
+};
+
+#endif

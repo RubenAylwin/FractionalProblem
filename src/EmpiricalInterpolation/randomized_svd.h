@@ -1,0 +1,132 @@
+/*
+  Randomized SVD for fast approximate matrix decomposition
+  Interface is same as Eigen's jacobiSVD
+
+  TODO
+  * account for skinny and fat matrices
+  * speed up: parallelize with Eigen's parallel LU, manually parallelize QR?
+  * Use Eigen::Ref to make more general? But this need to be float or double anyways, and Matrixf or Matrixd can be cast to BEM::Matrix? What about static matrices?
+*/
+
+#ifndef _RANDOMIZEDSVD_H_
+#define _RANDOMIZEDSVD_H_
+
+#include <algorithm>
+#include <chrono>
+#include <iostream>
+#include <cmath>
+#include "Eigen/Dense"
+#include <MyTypes.h>
+/* #include "utils.h" */
+
+using std::cout;
+using std::endl;
+using std::min;
+/* using Eigen::BEM::Matrix; */
+/* using Eigen::BEM::ColVector; */
+using Eigen::MatrixBase;
+
+
+class RandomizedSvd {
+public:
+ RandomizedSvd(const BEM::Matrix& m, int rank, int oversamples = 10, int iter = 2)
+      : U_(), V_(), S_() {
+    ComputeRandomizedSvd(m, rank, oversamples, iter);
+  }
+
+    BEM::ColVector singularValues() { return S_; }
+  BEM::Matrix matrixU() { return U_; }
+  BEM::Matrix matrixV() { return V_; }
+
+private:
+  BEM::Matrix U_, V_;
+    BEM::ColVector S_;
+
+  /*
+    Main function for randomized svd
+    oversamples: additional samples/rank for accuracy, to account for random sampling
+  */
+  void ComputeRandomizedSvd(const BEM::Matrix& A, int rank, int oversamples,
+                            int iter) {
+    using namespace std::chrono;
+
+    // If matrix is too small for desired rank/oversamples
+    if((rank + oversamples) > min(A.rows(), A.cols())) {
+      rank = min(A.rows(), A.cols());
+      oversamples = 0;
+    }
+
+    BEM::Matrix Q = FindRandomizedRange(A, rank + oversamples, iter);
+    BEM::Matrix B = Q.adjoint() * A;
+    // Compute the SVD on the thin matrix (much cheaper than SVD on original)
+    Eigen::BDCSVD<BEM::Matrix, Eigen::ComputeThinU> svd(B);
+    U_ = (Q * svd.matrixU()).block(0, 0, A.rows(), rank);
+    //V_ = svd.matrixV().block(0, 0, A.cols(), rank);
+    S_ = svd.singularValues();
+  }
+
+  /*
+    Finds a set of orthonormal vectors that approximates the range of A
+    Basic idea is that finding orthonormal basis vectors for A*W, where W is set of some
+    random vectors w_i, can approximate the range of A
+    Most of the time/computation in the randomized SVD is spent here
+  */
+  BEM::Matrix FindRandomizedRange(const BEM::Matrix& A, int size, int iter) {
+    int nr = A.rows(), nc = A.cols();
+    BEM::Matrix L(nr, size);
+    Eigen::FullPivLU<BEM::Matrix> lu1(nr, size);
+    BEM::Matrix Q = BEM::Matrix::Random(nc, size); // TODO should this be stack or dynamic allocation?
+    Eigen::FullPivLU<BEM::Matrix> lu2(nc, nr);
+
+    // Conduct normalized power iterations
+    // Intuition: multiply by A a few times to find a matrix Q that's "more in the range of A"
+    //  Simply multiplying by A repeatedly makes alg unstable, so use LU to "normalize"
+    // From Facebook implementation: "Please note that even n_iter=1 guarantees superb accuracy, whether or not there is any gap in the singular values of the matrix A being approximated"
+    for (int i = 0; i < iter; ++i) {
+      lu1.compute(A * Q);
+      L.setIdentity();
+      L.block(0, 0, nr, size).triangularView<Eigen::StrictlyLower>() =
+          lu1.matrixLU();
+
+      lu2.compute(A.adjoint() * L);
+      Q.setIdentity();
+      Q.block(0, 0, nc, size).triangularView<Eigen::StrictlyLower>() =
+          lu2.matrixLU();
+    }
+
+    Eigen::ColPivHouseholderQR<BEM::Matrix> qr(A * Q);
+    return qr.householderQ() * BEM::Matrix::Identity(nr, size); // recover skinny Q matrix
+  }
+};
+
+/*
+  Computes spectral norm of error in reconstruction, from SVD matrices.
+
+  Spectral norm = square root of maximum eigenvalue of matrix. Intuitively: the maximum 'scale', by which a matrix can 'stretch' a vector.
+  Note: The definition of an eigenvalue is for square matrices. For non square matrices, we can define singular values: Definition: The singular values of a m×n matrix A are the positive square roots of the nonzero eigenvalues of the corresponding matrix A'A. The corresponding eigenvectors are called the singular vectors.
+*/
+double diff_spectral_norm(BEM::Matrix A, BEM::Matrix U, BEM::ColVector s, BEM::Matrix V, int n_iter=20) {
+  int nr = A.rows();
+
+  BEM::ColVector y = BEM::ColVector::Random(nr);
+  y.normalize();
+
+  BEM::Matrix B = (A - U*s.asDiagonal()*V.adjoint());
+
+  // TODO make this more efficient (don't explicitly calculate B)
+  if(B.rows() != B.cols())
+     B = B*B.adjoint();
+
+ // Run n iterations of the power method
+ // TODO implement and compare fbpca's method
+  for(int i=0; i<n_iter; ++i) {
+    y = B*y;
+    y.normalize();
+  }
+  double eigval = abs((B*y).dot(y) / y.dot(y));
+  if(eigval==0) return 0;
+
+  return sqrt(eigval);
+}
+
+#endif
