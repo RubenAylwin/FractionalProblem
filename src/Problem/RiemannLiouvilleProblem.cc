@@ -1,5 +1,4 @@
 #include <RiemannLiouvilleProblem.h>
-#include <RiemannLiouville.h>
 #include <SobolevSlobodeckii.h>
 #include <L2Operator.h>
 #include <DiscreteSpace.h>
@@ -84,7 +83,9 @@ void GreedyHelper::loadBasis(BEM::ColVector newBasis)
  */
 BEM::Matrix GreedyHelper::reducedMatrixAtPoint(std::vector<double> point)
 {
+    msg(5) << "start GreedyHelper::reducedMatrixAtPoint" << endMsg;
     return BEM::linearCombination<BEM::Matrix>(_reducedMatrices, std::vector<double>{point.begin(), point.begin() + _reducedMatrices.size()});
+    msg(5) << "end GreedyHelper::reducedMatrixAtPoint" << endMsg;
 }
 
 /**
@@ -101,6 +102,10 @@ BEM::ColVector GreedyHelper::reducedRhsAtPoint(std::vector<double> point)
 BEM::ColVector GreedyHelper::solveAtPoint(std::vector<double> point)
 {
     msg(5) << "start GreedyHelper::solveAtPoint" << endMsg;
+    if (_reducedMatrices.size() == 0) {
+        BEM::ColVector result = BEM::ColVector::Zero(_hifiRhs[0].size());
+        return result;
+    }
     BEM::ColVector result = *_basis*solveAtPointReduced(point);
     msg(5) << "end GreedyHelper::solveAtPoint" << endMsg;
     return result;
@@ -113,8 +118,11 @@ BEM::ColVector GreedyHelper::solveAtPointReduced(std::vector<double> point)
 {
     msg(5) << "start GreedyHelper::solveAtPointReduced" << endMsg;
     BEM::Matrix redMat = reducedMatrixAtPoint(point);
+    msg(5) << "GreedyHelper::solveAtPointReduced got redMat" << endMsg;
     BEM::ColVector redRHS = reducedRhsAtPoint(point);
+    msg(5) << "GreedyHelper::solveAtPointReduced got redRHS" << endMsg;
     BEM::ColVector redSol = redMat.colPivHouseholderQr().solve(redRHS);
+    msg(5) << "GreedyHelper::solveAtPointReduced got Sol" << endMsg;
     msg(5) << "end GreedyHelper::solveAtPointReduced" << endMsg;
     return redSol;
 }
@@ -165,12 +173,10 @@ double GreedyHelper::errorAtPoint(std::vector<double> point)
  * @desc: order is to be given as a number between 50 and 100. The real fractional order is order/100.
  * This is necessary because fractional derivatives are saved in an int-indexed dictionary with the same format.
  */
-RiemannLiouvilleProblem::RiemannLiouvilleProblem(int order, DiscreteSpaceMesh &space, ExplicitScalarFunction_1D qFun, ExplicitScalarFunction_1D dFun, ExplicitScalarFunction_2D fFun) :
+RiemannLiouvilleProblem::RiemannLiouvilleProblem(int order, DiscreteSpaceMesh &space) :
     _order{order},
     _space{space},
-    _mesh{space.getMesh()},
-    _rhsFun(new ExplicitScalarFunction_2D(fFun)),
-    _RL(new RiemannLiouvilleMesh(_space, RiemannLiouvilleMesh::Side::LEFT, _order, dFun, qFun))
+    _mesh{space.getMesh()}
 {
 }
 
@@ -186,13 +192,13 @@ RiemannLiouvilleProblem::~RiemannLiouvilleProblem()
  */
 void RiemannLiouvilleProblem::buildDiscrete(void)
 {
-    msg(1) << "RiemannLiouvilleQ::buildDiscrete Start" << endMsg;
+    msg(5) << "RiemannLiouvilleQ::buildDiscrete Start" << endMsg;
     assert(_RL);
     _RL->assembleMassMatrix();
-    msg(1) << "RiemannLiouvilleQ::buildDiscrete done with RL" << endMsg;
+    msg(5) << "RiemannLiouvilleQ::buildDiscrete done with RL" << endMsg;
     _matrix.reset(new BEM::Matrix(_RL->getMatrix()));
     _rhs.reset(new BEM::ColVector(_space.testAgainstBasis(*_rhsFun)));
-    msg(1) << "RiemannLiouvilleQ::buildDiscrete End" << endMsg;
+    msg(5) << "RiemannLiouvilleQ::buildDiscrete End" << endMsg;
 }
 
 /**
@@ -273,6 +279,7 @@ void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limit
 
     //Points
     std::vector<std::vector<double>> quadPoints;
+    // std::vector<double> firstPoint{};
     {
         std::vector<std::vector<double>> toTensPoints(_dimensionQ + _dimensionD + _dimensionF, std::vector<double>());
         GaussLegendre_1D integ(points);
@@ -286,6 +293,7 @@ void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limit
             } else {
                 toTensPoints[i] = integ.points(limits[i].first, limits[i].second);
             }
+            // firstPoint.push_back(i < _dimensionQ ? 0.0 : 1.0);
         }
         quadPoints = BEM::tensorize(toTensPoints);
     }
@@ -295,7 +303,12 @@ void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limit
 
     // HiFi matrices for affine decomposition
     std::vector<BEM::Matrix> completeMatrices{};
-    
+
+    // auto nominalProblem = generateNewProblem(firstPoint);
+    // nominalProblem->buildDiscrete();
+    // nominalProblem->solve();
+    // auto nominalSolution = BEM::ColVector(nominalProblem->getSolutionVec());
+
     int counter = 0;
     // Save matrices for affine decomposition
     for (size_t i = 0; i < _dimensionQ + _dimensionD; ++i) {
@@ -324,6 +337,7 @@ void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limit
     _greedy.reset(new GreedyHelper(lfMat, completeMatrices, completeRhs, infSupEst));
     GreedyHelper &greedy = *_greedy;
 
+    
     // maxError in samples (initialized so that we enter the while loop)
     double maxError = tolerance + 1;
 

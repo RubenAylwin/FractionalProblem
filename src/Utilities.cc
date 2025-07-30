@@ -154,6 +154,17 @@ BEM::ColVector BEM::toColVector(const std::vector<double> &vector)
     return vec;
 }
 
+std::vector<BEM::Complex> BEM::toVector(const BEM::ColVector &vector)
+{
+    std::vector<BEM::Complex> vec(vector.size());
+    for (unsigned i = 0; i < vector.size(); ++i) {
+        vec[i] = vector[i];
+    }
+
+    return vec;
+}
+
+
 BEM::ColVector BEM::stretch(const BEM::Matrix &matrix)
 {
     BEM::ColVector result(matrix.rows()*matrix.cols());

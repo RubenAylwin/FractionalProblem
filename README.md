@@ -26,7 +26,7 @@ and a binary named "VP" should appear.
 
 ### To solve a RL problem
 The following options need to be given to the binary with double dash (--):
-- "Problem" -> 1 for solving the RL problem, 2 for constructing a Reduced Basis.
+- "Problem" -> 1 for solving the RL problem..
 - "dt" -> "poly", "trig" or "pw" indicates whether the coming expansion for the diffusion coefficient will be a taylor series, trigonometric expansion or piecewise partition of the coefficient.
 - "qt" -> "poly", "trig" or "pw" indicates whether the coming expansion for the reaction coefficient will be a taylor series, trigonometric expansion or piecewise partition of the coefficient.
 - "d" -> A space separated sequence of real numbers indicating the coefficients for an expansion of the diffusion coefficient.
@@ -40,3 +40,15 @@ E.g. To solve the problem with the coefficients $d(x) = 4+\sin(2\pi x)$ and $q(x
 ./VP --Problem 1 --dt trig --qt trig --d 4. 2. --q 0. 0. 1. --rhs 0. 1. -1. --fo 75 --mn 200
 ```
 This produces several files from which plots of the parameters and solution can be constructed, in the format (x, f(x)) for $x\in (0,1)$.
+
+### To evaluate a RB for the RL problem
+All previous parameters must be present. Moreover,
+- "Problem" -> set to 2 to evaluate a RB.
+- "dv" -> For each parameter in the expansion indicated in "d", indicate a $\pm$ variation for it.
+- "qv" -> For each parameter in the expansion indicated in "q", indicate a $\pm$ variation for it.
+
+E.g. To evaluate a RB for the problem with the coefficients $d(x) = \alpha+\beta\sin(2\pi x)$ and $q(x) = \gamma\cos(2\pi x)$, where $\alpha\in (3, 5),\ \beta\in (0, 1)$ and $\gamma\in(0, 2)$, and the right hand side $f(x)=x(1-x)$, for $s=1.5$ and $200$ elements in the mesh, we take
+```
+./VP --Problem 1 --dt trig --qt trig --d 4. .5 --q 0. 0. 1. --dv 1. .5 --qv 0. 0. 1. --rhs 0. 1. -1. --fo 75 --mn 200
+```
+This will print out messages with the approximation information through the weak greedy algorithm. The environment variable "RIE_PROB" must be set to a value equal or higher than $1$.

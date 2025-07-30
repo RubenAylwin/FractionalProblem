@@ -34,6 +34,7 @@ namespace BEM {
     ColVector conjugate(const ColVector &vec);
     ColVector toColVector(const std::vector<BEM::Complex> &vector);
     ColVector toColVector(const std::vector<double> &vector);
+    std::vector<BEM::Complex> toVector(const ColVector &vector);
     ColVector stretch(const BEM::Matrix &matrix);
     Matrix compress(const BEM::ColVector &vector);
     Interval1D intersect(const Interval1D &sup1, const Interval1D &sup2);

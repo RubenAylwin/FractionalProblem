@@ -9,6 +9,7 @@
 #include <Curve.h>
 #include <Mesh.h>
 #include <functional>
+#include <RiemannLiouville.h>
 
 //////////////////////////////////////////////////////////////
 // Classes for Riemann Liouville problem derivative and RB. //
@@ -59,6 +60,8 @@ class LeftFracDerivative;
 class DiscreteFunctionMesh;
 using VectorFun_1D = std::vector<ExplicitScalarFunction_1D>;
 using VectorFun_2D = std::vector<ExplicitScalarFunction_2D>;
+class ScalarFunctionBase_1D;
+class ScalarFunctionBase_2D;
 
 /**
  * @brief: Class for Riemman liouville problem.
@@ -66,7 +69,22 @@ using VectorFun_2D = std::vector<ExplicitScalarFunction_2D>;
 class RiemannLiouvilleProblem : public ProblemMesh
 {
 public:
-    RiemannLiouvilleProblem(int order, DiscreteSpaceMesh &space, ExplicitScalarFunction_1D qFun, ExplicitScalarFunction_1D dFun, ExplicitScalarFunction_2D fFun);
+    RiemannLiouvilleProblem(int order, DiscreteSpaceMesh &space);
+    template <typename T, typename S, typename R>
+    RiemannLiouvilleProblem(int order, DiscreteSpaceMesh &space, T qFun, S dFun, R fFun) :
+        RiemannLiouvilleProblem(order, space)
+    {
+        _rhsFun.reset(new R(fFun));
+        _RL.reset(new RiemannLiouvilleMesh(_space, RiemannLiouvilleMesh::Side::LEFT, _order, dFun, qFun));
+    }
+
+    RiemannLiouvilleProblem(int order, DiscreteSpaceMesh &space, std::shared_ptr<ScalarFunctionBase_1D> &qFun, std::shared_ptr<ScalarFunctionBase_1D> &dFun, std::shared_ptr<ScalarFunctionBase_2D> &fFun) :
+        RiemannLiouvilleProblem(order, space)
+    {
+        _rhsFun = fFun;
+        _RL.reset(new RiemannLiouvilleMesh(_space, RiemannLiouvilleMesh::Side::LEFT, _order, dFun, qFun));
+    }
+
     ~RiemannLiouvilleProblem(void);
     void buildDiscrete(void) override;
     const DiscreteSpaceMesh &getSpace(void) override {return _space;}
@@ -74,7 +92,7 @@ private:
     int _order;
     const DiscreteSpaceMesh &_space;
     const Mesh1D &_mesh;
-    std::shared_ptr<ExplicitScalarFunction_2D> _rhsFun = nullptr;
+    std::shared_ptr<ScalarFunctionBase_2D> _rhsFun = nullptr;
     std::unique_ptr<Operator> _RL = nullptr;
 };
 
