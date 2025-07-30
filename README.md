@@ -14,6 +14,7 @@ This project employs the following open-source libaries:
 - CMakeLists.txt should indicate where to find the files for the Eigen library.
 
 ## Usage
+### Installation
 Do:
 ```
 mkdir build
@@ -22,3 +23,5 @@ cmake ../
 make
 ```
 and a binary named "VP" should appear.
+
+### To solve a RL problem
