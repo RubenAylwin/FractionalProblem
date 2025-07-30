@@ -15,8 +15,10 @@ This project employs the following open-source libaries:
 
 ## Usage
 Do:
-1- mkdir build
-2- cd build
-3- cmake ../
-4- make
+```
+mkdir build
+cd build
+cmake ../
+make
+```
 and a binary named "VP" should appear.
