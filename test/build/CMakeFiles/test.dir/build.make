@@ -734,7 +734,6 @@ test: CMakeFiles/test.dir/Users/raylwin/Documents/Code/FractionalProblem/src/Uti
 test: CMakeFiles/test.dir/build.make
 test: /opt/homebrew/lib/libboost_program_options.dylib
 test: /opt/homebrew/lib/libtbb.12.14.dylib
-test: /opt/homebrew/anaconda3/lib/libpython3.11.dylib
 test: CMakeFiles/test.dir/link.txt
 	@$(CMAKE_COMMAND) -E cmake_echo_color "--switch=$(COLOR)" --green --bold --progress-dir=/Users/raylwin/Documents/Code/FractionalProblem/test/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_42) "Linking CXX executable test"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/test.dir/link.txt --verbose=$(VERBOSE)

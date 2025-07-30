@@ -4,7 +4,7 @@
 # compile CXX with /opt/homebrew/anaconda3/bin/arm64-apple-darwin20.0.0-clang++
 CXX_DEFINES = -DBOOST_PROGRAM_OPTIONS_DYN_LINK -DBOOST_PROGRAM_OPTIONS_NO_LIB
 
-CXX_INCLUDES = -I/Users/raylwin/Documents/Code/FractionalProblem/test/../includes -I/opt/homebrew/Cellar/python@3.12/3.12.4/Frameworks/Python.framework/Headers -I/opt/homebrew/Cellar/numpy/2.1.0/lib/python3.12/site-packages/numpy/_core/include -isystem /Users/raylwin/eigen -isystem /opt/homebrew/include -isystem /opt/homebrew/anaconda3/include/python3.11
+CXX_INCLUDES = -I/Users/raylwin/Documents/Code/FractionalProblem/test/../includes -isystem /Users/raylwin/eigen -isystem /opt/homebrew/include
 
 CXX_FLAGSarm64 = -O3 -std=gnu++20 -arch arm64 -isysroot /Applications/Xcode.app/Contents/Developer/Platforms/MacOSX.platform/Developer/SDKs/MacOSX.sdk -Wall -Xpreprocessor -pedantic
 

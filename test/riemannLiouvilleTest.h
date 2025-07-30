@@ -240,46 +240,46 @@ namespace riemannLiouvilleTests {
         
     // }
 
-    // BOOST_AUTO_TEST_CASE(FactoryGreedyCheck2, *boost::unit_test::disabled())
-    // {
-    //     TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0});
-    //     ExplicitScalarFunction_1D d([](double t)->BEM::Complex {return 1.0;});
-    //     ExplicitScalarFunction_1D q([](double t)->BEM::Complex {return 0.0;});
-    //     ExplicitScalarFunction_2D rhs([](double t, double s)->BEM::Complex {return 1.0;});
+    BOOST_AUTO_TEST_CASE(FactoryGreedyCheck2, *boost::unit_test::disabled())
+    {
+        TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0});
+        ExplicitScalarFunction_1D d([](double t)->BEM::Complex {return 1.0;});
+        ExplicitScalarFunction_1D q([](double t)->BEM::Complex {return 0.0;});
+        ExplicitScalarFunction_2D rhs([](double t, double s)->BEM::Complex {return 1.0;});
 
-    //     int order = BEM::getEnv<int>("TEST2_FORDER");
-    //     order = order > 50 ? order : 60;
-    //     double fOrder = order/100.;
-    //     double rOrder = 2*fOrder;
+        int order = BEM::getEnv<int>("TEST2_FORDER");
+        order = order > 50 ? order : 60;
+        double fOrder = order/100.;
+        double rOrder = 2*fOrder;
 
-    //     unsigned size = std::pow(2, 10);
-    //     ExplicitScalarFunction_1D d1([](double t)->BEM::Complex {return t < 0.25 ? 1.0 : 0.0;});
-    //     ExplicitScalarFunction_1D d2([](double t)->BEM::Complex {return (t >= 0.25 and t < 0.5) ? 1.0 : 0.0;});
-    //     ExplicitScalarFunction_1D d3([](double t)->BEM::Complex {return (t >= 0.5 and t < 0.75) ? 1.0 : 0.0;});
-    //     ExplicitScalarFunction_1D d4([](double t)->BEM::Complex {return t >= 0.75 ? 1.0 : 0.0;});
-    //     ExplicitScalarFunction_1D q1([](double t)->BEM::Complex {return 1.0;});
-    //     ExplicitScalarFunction_2D rhs1([](double t, double s)->BEM::Complex {return t*(1.-t);});
-    //     ExplicitScalarFunction_1D q2([](double t)->BEM::Complex {return t;});
-    //     ExplicitScalarFunction_1D q3([](double t)->BEM::Complex {return (1.-t);});
-    //     ExplicitScalarFunction_1D q4([](double t)->BEM::Complex {return t*t;});
-    //     ExplicitScalarFunction_1D q5([](double t)->BEM::Complex {return (1.-t)*(1.-t);});
-    //     ExplicitScalarFunction_2D rhs2([](double t, double s)->BEM::Complex {return 1.;});
-    //     RiemannLiouvilleMeshFactory factory(size, order, VectorFun_1D{d}, VectorFun_1D{d}, VectorFun_2D{rhs1});
-    //     std::vector<std::vector<double>> pointsForTesting{};
-    //     std::uniform_real_distribution<double> _unif(0., 1.);
-    //     std::mt19937 _rng(1993);
-    //     auto est = [fOrder](std::vector<double> point) -> double {
-    //         // double min = *std::min_element(point.begin() + 2, point.begin() + 4 + 2);
-    //         // double max = *std::max_element(point.begin() + 2, point.begin() + 4 + 2);
-    //         return std::abs(std::cos(M_PI*fOrder));
-    //         // return 0.5*((max + min)*std::abs(std::cos(M_PI*fOrder)) - (max - min));
-    //     };
+        unsigned size = std::pow(2, 6);
+        ExplicitScalarFunction_1D d1([](double t)->BEM::Complex {return t < 0.25 ? 1.0 : 0.0;});
+        ExplicitScalarFunction_1D d2([](double t)->BEM::Complex {return (t >= 0.25 and t < 0.5) ? 1.0 : 0.0;});
+        ExplicitScalarFunction_1D d3([](double t)->BEM::Complex {return (t >= 0.5 and t < 0.75) ? 1.0 : 0.0;});
+        ExplicitScalarFunction_1D d4([](double t)->BEM::Complex {return t >= 0.75 ? 1.0 : 0.0;});
+        ExplicitScalarFunction_1D q1([](double t)->BEM::Complex {return 1.0;});
+        ExplicitScalarFunction_2D rhs1([](double t, double s)->BEM::Complex {return t*(1.-t);});
+        ExplicitScalarFunction_1D q2([](double t)->BEM::Complex {return t;});
+        ExplicitScalarFunction_1D q3([](double t)->BEM::Complex {return (1.-t);});
+        ExplicitScalarFunction_1D q4([](double t)->BEM::Complex {return t*t;});
+        ExplicitScalarFunction_1D q5([](double t)->BEM::Complex {return (1.-t)*(1.-t);});
+        ExplicitScalarFunction_2D rhs2([](double t, double s)->BEM::Complex {return 1.;});
+        RiemannLiouvilleMeshFactory factory(size, order, VectorFun_1D{d}, VectorFun_1D{d}, VectorFun_2D{rhs1});
+        std::vector<std::vector<double>> pointsForTesting{};
+        std::uniform_real_distribution<double> _unif(0., 1.);
+        std::mt19937 _rng(1993);
+        auto est = [fOrder](std::vector<double> point) -> double {
+            // double min = *std::min_element(point.begin() + 2, point.begin() + 4 + 2);
+            // double max = *std::max_element(point.begin() + 2, point.begin() + 4 + 2);
+            return std::abs(std::cos(M_PI*fOrder));
+            // return 0.5*((max + min)*std::abs(std::cos(M_PI*fOrder)) - (max - min));
+        };
 
-    //     // std::vector<BEM::Interval1D> limits{BEM::Interval1D(0., 1.), BEM::Interval1D(0., 1.), BEM::Interval1D(1, 1), BEM::Interval1D(0.7, 1.3), BEM::Interval1D(0.7, 1.3), BEM::Interval1D(0.7, 1.3), BEM::Interval1D(1., 1.)};
-    //     std::vector<BEM::Interval1D> limits{BEM::Interval1D(0., 5.), BEM::Interval1D(1., 1.),  BEM::Interval1D(1., 1.)};
-    //     factory.trainGreedy(limits, 100, 1e-6, est);
+        // std::vector<BEM::Interval1D> limits{BEM::Interval1D(0., 1.), BEM::Interval1D(0., 1.), BEM::Interval1D(1, 1), BEM::Interval1D(0.7, 1.3), BEM::Interval1D(0.7, 1.3), BEM::Interval1D(0.7, 1.3), BEM::Interval1D(1., 1.)};
+        std::vector<BEM::Interval1D> limits{BEM::Interval1D(0., 5.), BEM::Interval1D(1., 1.),  BEM::Interval1D(1., 1.)};
+        factory.trainGreedy(limits, 100, 1e-6, est);
 
-    // }
+    }
     
 
     // BOOST_AUTO_TEST_CASE(FactoryGreedyCheck3, *boost::unit_test::disabled())
@@ -460,75 +460,76 @@ namespace riemannLiouvilleTests {
     //     }
     // }
 
-    BOOST_AUTO_TEST_CASE(MatrixMesh4, *boost::unit_test::disabled())
-    {
-        TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0});
-        ExplicitScalarFunction_1D d([](double t)->BEM::Complex {return 2.+std::sin(2*M_PI*t);});
-        int order = 90;
-        double fOrder = order/100.;
-        double rOrder = 2*fOrder;
+    // BOOST_AUTO_TEST_CASE(MatrixMesh4, *boost::unit_test::disabled())
+    // {
+    //     TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0});
+    //     ExplicitScalarFunction_1D d([](double t)->BEM::Complex {return 4.+std::sin(2*M_PI*t);});
+    //     int order = 90;
+    //     double fOrder = order/100.;
+    //     double rOrder = 2*fOrder;
         // ExplicitScalarFunction_1D analyticSolution([=](double t) {return (-std::pow(t, rOrder) + std::pow(t, rOrder-1))/(rOrder*std::tgamma(rOrder));});
         // // ExplicitScalarFunction_2D analyticSolutionDer([=](double t, double s) {return (-std::tgamma(rOrder + 1)/std::tgamma(rOrder+1-fOrder)*std::pow(t, fOrder) + std::tgamma(rOrder)/std::tgamma(fOrder)*std::pow(t, fOrder-1))/(rOrder*std::tgamma(rOrder));});
         // BEM::plotFunction("aSol", analyticSolution);
-        ExplicitScalarFunction_1D q([](double t)->BEM::Complex {
-            return std::cos(2*M_PI*t);});
-        ExplicitScalarFunction_2D rhs([&](double t, double s)->BEM::Complex {return 1.;});
-        int size = std::pow(2, 1);
-        int power = 11;
-        int sizeOK = std::pow(2, power);
-        // MeshCurveGraded1D meshOK = MeshCurveGraded1D(sizeOK, curve, 1./(rOrder-1.));
-        // // auto meshOK = MeshCurve1D(sizeOK, curve);
-        // RegularP1_0Mesh_1D spaceOK(meshOK);
-        // RegularP0Mesh_1D spaceOK0(meshOK);
-        // RiemannLiouvilleMesh rlmOK(spaceOK, RiemannLiouvilleMesh::Side::LEFT, order, d, q);
-        // auto vecOK = spaceOK.testAgainstBasis(rhs);
-        // BEM::ColVector solutionVecOK1(rlmOK.getMatrix().colPivHouseholderQr().solve(vecOK));
-        // std::vector<BEM::Complex> solutionVecOK(sizeOK-1, 0.0);
-        // for (int i = 0; i < sizeOK-1; ++i) {
-        //     solutionVecOK[i] = solutionVecOK1[i];
-        // }
-        // auto solutionOK = spaceOK.generateFunction(solutionVecOK);
-        // auto &solutionDerOKL = solutionOK->derivative(order);
-        // auto &solutionDerOKR = solutionOK->derivative(-order);
-        // MeshCurve1D *meshPrev = new MeshCurve1D(size, curve);
-        // RegularP1_0Mesh_1D *spacePrev = new RegularP1_0Mesh_1D(*meshPrev);
-        // RiemannLiouvilleMesh rlm(*spacePrev, RiemannLiouvilleMesh::Side::LEFT, order, d, q);
-        // auto vec = spacePrev->testAgainstBasis(rhs);
-        // BEM::ColVector solutionVec1(rlm.getMatrix().colPivHouseholderQr().solve(vec));
-        // std::vector<BEM::Complex> solutionVec(size-1, 0.0);
-        // for (int i = 0; i < size-1; ++i) {
-        //     solutionVec[i] = solutionVec1[i];
-        // }
-        // auto solutionPrev = spacePrev->generateFunction(solutionVec);
-        // BEM::plotFunction("solutionOK"+std::to_string(order-50), *solutionOK, meshOK);
-        // BEM::plotFunction("solutionDerOK", solutionDerOKL, meshOK);
-        for (int s = 1; s <= power-1; ++s) {
-            size = std::pow(2, s);
-            MeshCurve1D *mesh = new MeshCurve1D(size, curve);
-            RegularP1_0Mesh_1D *space = new RegularP1_0Mesh_1D(*mesh);
-            RiemannLiouvilleMesh rlm(*space, RiemannLiouvilleMesh::Side::LEFT, order, d, q);
-            auto &matrix = rlm.getMatrix();
-            Eigen::BDCSVD<BEM::Matrix, Eigen::ComputeThinU> SVD(matrix);
-            // auto vec = space->testAgainstBasis(rhs);
-            // BEM::ColVector solutionVec1(rlm.getMatrix().colPivHouseholderQr().solve(vec));
-            // std::vector<BEM::Complex> solutionVec(size-1, 0.0);
-            // for (int i = 0; i < size-1; ++i) {
-            //     solutionVec[i] = solutionVec1[i];
-            // }
-            // auto solution = space->generateFunction(solutionVec);
-            // auto &solutionDerL = solution->derivative(order);
-            // BEM::plotFunction("sol"+std::to_string(s), *solution, *mesh);
-            // BEM::plotFunction("der"+std::to_string(s), solutionDerL, *mesh);
-            // std::cout << solution->L2Error(ExplicitScalarFunction_2D([&](double t, double s){return (*solutionOK)(t);})) << " " <<
-            //           solutionDerL.L2Error(ExplicitScalarFunction_2D([&](double t, double s){return solutionDerOKL(t);})) << std::endl;
-            delete mesh;
-            delete space;
-            // delete meshPrev;
-            // delete spacePrev;
-            // meshPrev = mesh;
-            // spacePrev = space;
-        }
-    }
+    //     ExplicitScalarFunction_1D q([](double t)->BEM::Complex {
+    //         return std::cos(2*M_PI*t);});
+    //     ExplicitScalarFunction_2D rhs([&](double t, double s)->BEM::Complex {return 1.;});
+    //     int size = std::pow(2, 1);
+    //     int power = 9;
+    //     int sizeOK = std::pow(2, power);
+    //     MeshCurveGraded1D meshOK = MeshCurveGraded1D(sizeOK, curve, 1./(rOrder-1.));
+    //     // // auto meshOK = MeshCurve1D(sizeOK, curve);
+    //     RegularP1_0Mesh_1D spaceOK(meshOK);
+    //     // RegularP0Mesh_1D spaceOK0(meshOK);
+    //     RiemannLiouvilleMesh rlmOK(spaceOK, RiemannLiouvilleMesh::Side::LEFT, order, d, q);
+    //     auto vecOK = spaceOK.testAgainstBasis(rhs);
+    //     BEM::ColVector solutionVecOK1(rlmOK.getMatrix().colPivHouseholderQr().solve(vecOK));
+    //     std::vector<BEM::Complex> solutionVecOK(sizeOK-1, 0.0);
+    //     for (int i = 0; i < sizeOK-1; ++i) {
+    //         solutionVecOK[i] = solutionVecOK1[i];
+    //     }
+    //     auto solutionOK = spaceOK.generateFunction(solutionVecOK);
+    //     auto &solutionDerOKL = solutionOK->derivative(order);
+    //     auto &solutionDerOKR = solutionOK->derivative(-order);
+    //     MeshCurve1D *meshPrev = new MeshCurve1D(size, curve);
+    //     RegularP1_0Mesh_1D *spacePrev = new RegularP1_0Mesh_1D(*meshPrev);
+    //     RiemannLiouvilleMesh rlm(*spacePrev, RiemannLiouvilleMesh::Side::LEFT, order, d, q);
+    //     auto vec = spacePrev->testAgainstBasis(rhs);
+    //     BEM::ColVector solutionVec1(rlm.getMatrix().colPivHouseholderQr().solve(vec));
+    //     std::vector<BEM::Complex> solutionVec(size-1, 0.0);
+    //     for (int i = 0; i < size-1; ++i) {
+    //         solutionVec[i] = solutionVec1[i];
+    //     }
+    //     auto solutionPrev = spacePrev->generateFunction(solutionVec);
+    //     BEM::plotFunction("solutionOK"+std::to_string(order-50), *solutionOK, meshOK);
+    //     BEM::plotFunction("solutionDerOK", solutionDerOKL, meshOK);
+        
+    //     for (int s = 1; s <= power-1; ++s) {
+    //         size = std::pow(2, s);
+    //         MeshCurve1D *mesh = new MeshCurve1D(size, curve);
+    //         RegularP1_0Mesh_1D *space = new RegularP1_0Mesh_1D(*mesh);
+    //         RiemannLiouvilleMesh rlm(*space, RiemannLiouvilleMesh::Side::LEFT, order, d, q);
+    //         auto &matrix = rlm.getMatrix();
+    //         Eigen::BDCSVD<BEM::Matrix, Eigen::ComputeThinU> SVD(matrix);
+    //         auto vec = space->testAgainstBasis(rhs);
+    //         BEM::ColVector solutionVec1(rlm.getMatrix().colPivHouseholderQr().solve(vec));
+    //         std::vector<BEM::Complex> solutionVec(size-1, 0.0);
+    //         for (int i = 0; i < size-1; ++i) {
+    //             solutionVec[i] = solutionVec1[i];
+    //         }
+    //         auto solution = space->generateFunction(solutionVec);
+    //         auto &solutionDerL = solution->derivative(order);
+    //         // BEM::plotFunction("sol"+std::to_string(s), *solution, *mesh);
+    //         // BEM::plotFunction("der"+std::to_string(s), solutionDerL, *mesh);
+    //         std::cout << solution->L2Error(ExplicitScalarFunction_2D([&](double t, double s){return (*solutionOK)(t);})) << " " <<
+    //                   solutionDerL.L2Error(ExplicitScalarFunction_2D([&](double t, double s){return solutionDerOKL(t);})) << std::endl;
+    //         // delete mesh;
+    //         // delete space;
+    //         delete meshPrev;
+    //         delete spacePrev;
+    //         meshPrev = mesh;
+    //         spacePrev = space;
+    //     }
+    // }
 
     
     // BOOST_AUTO_TEST_CASE(MatrixConstruction, *boost::unit_test::disabled())
