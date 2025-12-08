@@ -76,7 +76,7 @@ void solveRLProblem(int order, std::string typeD, std::string typeQ, BEM::CVecto
 }
 
 
-void evaluateRBforRL(int order, std::string typeD, std::string typeQ, BEM::CVector dVec, BEM::CVector qVec, BEM::CVector dVarVec, BEM::CVector qVarVec, BEM::CVector rhsVec, int ms)
+void evaluateRBforRL(int order, std::string typeD, std::string typeQ, BEM::CVector dVec, BEM::CVector qVec, BEM::CVector dVarVec, BEM::CVector qVarVec, BEM::CVector rhsVec, int points, int ms)
 {
     std::vector<BEM::Interval1D> limits{};
     
@@ -97,7 +97,6 @@ void evaluateRBforRL(int order, std::string typeD, std::string typeQ, BEM::CVect
         }
         BEM::plotFunction("Q"+std::to_string(i), qFunVec.back());
     }
-
     VectorFun_1D dFunVec{};
     for (size_t i = 0; i < dVec.size(); ++i) {
         BEM::CVector auxDVec(dVec.size(), 0.0);
@@ -115,20 +114,19 @@ void evaluateRBforRL(int order, std::string typeD, std::string typeQ, BEM::CVect
         }
         BEM::plotFunction("D"+std::to_string(i), dFunVec.back());
     }
-
     PolynomialFunction_1D rhsFun(rhsVec);
     ExplicitScalarFunction_2D rhs2D([&rhsFun](double t, double s){return rhsFun(t);});
     limits.push_back(BEM::Interval1D(1., 1.));
-
-    
-    auto est = [order](std::vector<double> point) -> double {
-        // double min = *std::min_element(point.begin() + 2, point.begin() + 4 + 2);
-        // double max = *std::max_element(point.begin() + 2, point.begin() + 4 + 2);
-        return std::abs(std::cos(M_PI*order/100.));
-        // return 0.5*((max + min)*std::abs(std::cos(M_PI*fOrder)) - (max - min));
+    auto qSize = qVec.size();
+    auto dSize = dVec.size();
+    auto est = [order, qSize, dSize](std::vector<double> point) -> double {
+        double min = *std::min_element(point.begin() + qSize, point.begin() + dSize + qSize);
+        double max = *std::max_element(point.begin() + qSize, point.begin() + dSize + qSize);
+        // return std::abs(std::cos(M_PI*order/100.));
+        return 0.5*((max + min)*std::abs(std::cos(M_PI*order/100.)) - (max - min));
     };
     RiemannLiouvilleMeshFactory factory(ms, order, qFunVec, dFunVec, VectorFun_2D{rhs2D});
-    factory.trainGreedy(limits, 100, 1e-6, est);
+    factory.trainGreedy(limits, points, 1e-6, est);
 }
 
 int main(int argc, char* argv[]) {
@@ -143,7 +141,8 @@ int main(int argc, char* argv[]) {
         ("dv", po::value<BEM::CVector>()->multitoken(), "Variation for diffusion coefficient.")
         ("qv", po::value<BEM::CVector>()->multitoken(), "Variation for reaction coefficient.")
         ("fo", po::value<int>(), "Fractional order.")
-        ("mesh_size", po::value<int>(), "Num. mesh elements.");
+        ("rbp", po::value<int>(), "Num. GL points for RB construction.")
+        ("mn", po::value<int>(), "Num. mesh elements.");;
     
     po::variables_map vm;
     po::store(po::parse_command_line(argc, argv, desc, ~po::command_line_style::allow_short), vm);
@@ -164,7 +163,7 @@ int main(int argc, char* argv[]) {
     auto rhsVec = readOption(vm, std::string("rhs"), BEM::CVector{1.});
     auto typeD = vm["dt"].as<std::string>();
     auto typeQ = vm["qt"].as<std::string>();
-    int ms = readOption(vm, std::string("mesh_size"), 100);
+    int ms = readOption(vm, std::string("mn"), 100);
     int order = readOption(vm, std::string("fo"), 70);
             
     if (vm["Problem"].as<int>() == 1){
@@ -175,7 +174,7 @@ int main(int argc, char* argv[]) {
 
         auto dVarVec = readOption(vm, std::string("dv"), BEM::CVector(dVec.size(), 0.0));
         auto qVarVec = readOption(vm, std::string("qv"), BEM::CVector(qVec.size(), 0.0));
-
+        auto glPoints = readOption(vm, std::string("rbp"), 10);
         if (dVarVec.size() != dVec.size()){
             std::cerr << "Data --d and --dv must have the same length" << std::endl;
             std::cerr << "Quitting without solving." << std::endl;
@@ -188,7 +187,7 @@ int main(int argc, char* argv[]) {
             return -1;
         }
         std::cout << "Constructing and evaluating a Reduced Basis for the Riemann Liouville Problem." << std::endl;
-        evaluateRBforRL(order, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, ms);
+        evaluateRBforRL(order, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, glPoints, ms);
     } else {
         std::cerr << "Invalid problem type." << std::endl;
         std::cerr << "Quitting without solving." << std::endl;
@@ -196,49 +195,3 @@ int main(int argc, char* argv[]) {
     }
     return 0;
 }
-
-
-// int main2(int argc, char* argv[]) {
-//     po::options_description desc("Options");
-//     desc.add_options()("Problem", po::value<int>(), "Specify problem to solve")
-//         ("help", "Show help menu")
-//         ("P", po::value<double>(), "Period")
-//         ("WL", po::value<double>(), "Wavelength")
-//         ("WN", po::value<double>(), "Wavenumber")
-//         ("ANG", po::value<double>(), "Angle")
-//         ("DOF", po::value<int>(), "NumOfElements")
-//         ("OK", po::value<int>(), "NumOfElements for Overkill")
-//         ("SIN", po::value<std::vector<double>>()->multitoken(), "SinCoef")
-//         ("COS", po::value<std::vector<double>>()->multitoken(), "CosCoef")
-//         ("DCY", po::value<double>(), "Decay")
-//         ("PS", po::value<double>(), "Perturbation size")
-//         ("TG", po::value<int>(), "TrainingSamples")
-//         ("TT", po::value<int>(), "TestingSamples")
-//         ("RL", po::value<int>(), "Realizations")
-//         ("RBG", po::value<int>(), "RBGreen");
-    
-//     po::variables_map vm;
-//     po::store(po::parse_command_line(argc, argv, desc), vm);
-//     po::notify(vm);
-//     if (vm.count("help")) {
-//         std::cout << desc << std::endl;
-//         return 1;
-//     }
-    
-//     if (vm.count("P")) {
-//         if (vm["Problem"].as<int>() == 1){
-//             runAndPlotSolutionForHolo(vm["P"].as<double>(), vm.count("WL") ? 2.*M_PI/vm["WL"].as<double>() : vm["WN"].as<double>(),  vm["ANG"].as<double>(), vm["DOF"].as<int>(), vm["SIN"].as<std::vector<double>>(), vm["COS"].as<std::vector<double>>());
-//             return 0;
-//         }
-
-//         if (vm["Problem"].as<int>() == 2) {
-//             SLEmpiricalTest(vm["P"].as<double>(), vm.count("WL") ? 2.*M_PI/vm["WL"].as<double>() : vm["WN"].as<double>(),  vm["ANG"].as<double>(), vm["SIN"].as<std::vector<double>>(), vm["COS"].as<std::vector<double>>(), vm["PS"].as<double>(), vm["DCY"].as<double>(), vm["DOF"].as<int>(), vm["OK"].as<int>(), vm["TG"].as<int>(), vm["TT"].as<int>(), vm["RBG"].as<int>(), vm["RL"].as<int>());
-//         }
-
-//         if (vm["Problem"].as<int>() == 3) {
-//             Reliability(vm["P"].as<double>(), vm.count("WL") ? 2.*M_PI/vm["WL"].as<double>() : vm["WN"].as<double>(),  vm["ANG"].as<double>(), vm["SIN"].as<std::vector<double>>(), vm["COS"].as<std::vector<double>>(), vm["PS"].as<double>(), vm["DCY"].as<double>(), vm["DOF"].as<int>(), vm["TG"].as<int>(), vm["RBG"].as<int>());
-//         }
-        
-//     }
-//     return 0;
-// }
