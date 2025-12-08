@@ -9,6 +9,7 @@
 
 # Folder
 build
+test/build
 
 # Precompiled Headers
 *.gch
