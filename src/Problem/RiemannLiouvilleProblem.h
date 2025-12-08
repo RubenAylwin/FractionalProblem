@@ -104,7 +104,7 @@ class RiemannLiouvilleMeshFactory : public ProblemFactory
 public:
     RiemannLiouvilleMeshFactory(unsigned numberOfElements, int order, std::vector<ExplicitScalarFunction_1D> qVector, std::vector<ExplicitScalarFunction_1D> dVector, std::vector<ExplicitScalarFunction_2D> fVector);
     std::unique_ptr<ProblemMesh> generateNewProblem(std::vector<double> parameters);
-    void trainGreedy(std::vector<BEM::Interval1D> limits, int points, double tolerance, const std::function<double (std::vector<double>)> &infSupEst, const std::vector<std::vector<double>> *testingPoints=nullptr);
+    std::vector<double> trainGreedy(std::vector<BEM::Interval1D> limits, int points, double tolerance, const std::function<double (std::vector<double>)> &infSupEst, const std::vector<std::vector<double>> *testingPoints=nullptr);
     BEM::ColVector greedySolve(std::vector<double> parameters);
     BEM::Matrix getSobMat(void);
     ~RiemannLiouvilleMeshFactory(void);

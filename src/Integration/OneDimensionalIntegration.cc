@@ -180,7 +180,7 @@ public:
 #define QuadInit(z, param, n) {                             \
         if (n == param) {                                   \
             auto Q = GaussLegendreQuadContainer<param>();   \
-            for (unsigned i = 0; i < param; ++i) {               \
+            for (unsigned i = 0; i < param; ++i) {          \
                 _points[i] = Q._points[i];                  \
                 _weights[i] = Q._weights[i];                \
             }                                               \
@@ -188,6 +188,16 @@ public:
         }                                                   \
     }
 
+#define QuadInit2(z, param, n) {                             \
+        if (n == param) {                                   \
+            auto Q = GaussLegendreQuadContainer<param+250>();   \
+            for (unsigned i = 0; i < param+250; ++i) {               \
+                _points[i] = Q._points[i];                  \
+                _weights[i] = Q._weights[i];                \
+            }                                               \
+            return;                                         \
+        }                                                   \
+    }
 /**
  * @brief: Constructor. Requires only number of points.
  */
@@ -197,8 +207,12 @@ GaussLegendre_1D::GaussLegendre_1D(unsigned n) :
     if (n == 0) {
         throw std::invalid_argument("Invalid num of 1D legendre points (zero)");
     }
-    BOOST_PP_REPEAT(220, QuadInit, n);
-    throw std::invalid_argument("Invalid num of 1D legendre points (max is 200)");
+    if (n < 250) {
+        BOOST_PP_REPEAT(250, QuadInit, n);
+    } else if (n <= 500) {
+        BOOST_PP_REPEAT(251, QuadInit2, n-250);
+    }
+    throw std::invalid_argument("Invalid num of 1D legendre points (max is 500)");
 }
 
 /**

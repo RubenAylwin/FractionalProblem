@@ -76,7 +76,8 @@ void solveRLProblem(int order, std::string typeD, std::string typeQ, BEM::CVecto
 }
 
 
-void evaluateRBforRL(int order, std::string typeD, std::string typeQ, BEM::CVector dVec, BEM::CVector qVec, BEM::CVector dVarVec, BEM::CVector qVarVec, BEM::CVector rhsVec, int points, int ms)
+
+std::vector<double> evaluateRBforRL(int order, std::string typeD, std::string typeQ, BEM::CVector dVec, BEM::CVector qVec, BEM::CVector dVarVec, BEM::CVector qVarVec, BEM::CVector rhsVec, int points, int ms)
 {
     std::vector<BEM::Interval1D> limits{};
     
@@ -126,7 +127,19 @@ void evaluateRBforRL(int order, std::string typeD, std::string typeQ, BEM::CVect
         return 0.5*((max + min)*std::abs(std::cos(M_PI*order/100.)) - (max - min));
     };
     RiemannLiouvilleMeshFactory factory(ms, order, qFunVec, dFunVec, VectorFun_2D{rhs2D});
-    factory.trainGreedy(limits, points, 1e-6, est);
+    return factory.trainGreedy(limits, points, 1e-6, est);
+}
+
+void evaluateRBforRL_list(std::vector<int> order, std::string typeD, std::string typeQ, BEM::CVector dVec, BEM::CVector qVec, BEM::CVector dVarVec, BEM::CVector qVarVec, BEM::CVector rhsVec, int points, int ms)
+{
+    for (auto s : order){
+        auto vec = evaluateRBforRL(s, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, points, ms);
+        for (auto val : vec) {
+            std::cout << val << " - ";
+        }
+        std::cout << std::endl;
+    }
+        
 }
 
 int main(int argc, char* argv[]) {
@@ -140,6 +153,7 @@ int main(int argc, char* argv[]) {
         ("q", po::value<BEM::CVector>()->multitoken(), "Expansion for reaction coefficient.")
         ("dv", po::value<BEM::CVector>()->multitoken(), "Variation for diffusion coefficient.")
         ("qv", po::value<BEM::CVector>()->multitoken(), "Variation for reaction coefficient.")
+        ("slist", po::value<std::vector<int>>()->multitoken(), "possible s.")
         ("fo", po::value<int>(), "Fractional order.")
         ("rbp", po::value<int>(), "Num. GL points for RB construction.")
         ("mn", po::value<int>(), "Num. mesh elements.");;
@@ -188,6 +202,24 @@ int main(int argc, char* argv[]) {
         }
         std::cout << "Constructing and evaluating a Reduced Basis for the Riemann Liouville Problem." << std::endl;
         evaluateRBforRL(order, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, glPoints, ms);
+    } else if (vm["Problem"].as<int>() == 3){
+        auto sVec = readOption(vm, std::string("slist"), std::vector<int>{75});
+        auto dVarVec = readOption(vm, std::string("dv"), BEM::CVector(dVec.size(), 0.0));
+        auto qVarVec = readOption(vm, std::string("qv"), BEM::CVector(qVec.size(), 0.0));
+        auto glPoints = readOption(vm, std::string("rbp"), 10);
+        if (dVarVec.size() != dVec.size()){
+            std::cerr << "Data --d and --dv must have the same length" << std::endl;
+            std::cerr << "Quitting without solving." << std::endl;
+            return -1;
+        }
+
+        if (qVarVec.size() != qVec.size()){
+            std::cerr << "Data --q and --qv must have the same length" << std::endl;
+            std::cerr << "Quitting without solving." << std::endl;
+            return -1;
+        }
+        std::cout << "Constructing and evaluating a Reduced Basis for the Riemann Liouville Problem." << std::endl;
+        evaluateRBforRL_list(sVec, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, glPoints, ms);
     } else {
         std::cerr << "Invalid problem type." << std::endl;
         std::cerr << "Quitting without solving." << std::endl;

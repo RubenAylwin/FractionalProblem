@@ -271,7 +271,7 @@ std::unique_ptr<ProblemMesh> RiemannLiouvilleMeshFactory::generateNewProblem(std
 /**
  * @brief: Get a RB.
  */
-void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limits, int points, double tolerance, const std::function<double (std::vector<double>)> &infSupEst, const std::vector<std::vector<double>> *testingPoints)
+std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limits, int points, double tolerance, const std::function<double (std::vector<double>)> &infSupEst, const std::vector<std::vector<double>> *testingPoints)
 {
     msg(5) << "start RiemannLiouvilleMeshFactory::trainGreedy" << endMsg;
     assert(limits.size() == _dimensionQ + _dimensionD + _dimensionF);
@@ -279,11 +279,11 @@ void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limit
 
     //Points
     std::vector<std::vector<double>> quadPoints;
+    std::vector<double> errors_return;
     // std::vector<double> firstPoint{};
     {
         std::vector<std::vector<double>> toTensPoints(_dimensionQ + _dimensionD + _dimensionF, std::vector<double>());
         GaussLegendre_1D integ(points);
-
         for (size_t i = 0; i < _dimensionQ + _dimensionD + _dimensionF; ++i) {
             // If a dimension is given same lower and upper limit, then we dont tensorize there.
             // Bit of a hacky solution to being able to give functions that will have no real
@@ -340,7 +340,9 @@ void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limit
     
     // maxError in samples (initialized so that we enter the while loop)
     double maxError = tolerance + 1;
-
+    std::unique_ptr<std::list<double>> estimators(new std::list<double>{});
+    std::unique_ptr<std::list<double>> errors(new std::list<double>{});
+    
     while (maxError > tolerance) {
         maxError = 0.0;
         std::vector<double> toAdd;
@@ -352,36 +354,54 @@ void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limit
             }
         }
         BEM::ColVector addedSolution = BEM::linearCombination(completeMatrices, std::vector<double>(toAdd.begin(), toAdd.begin() + _dimensionQ + _dimensionD)).colPivHouseholderQr().solve(BEM::linearCombination(completeRhs, std::vector<double>(toAdd.begin() + _dimensionQ + _dimensionD, toAdd.end())));
+        errors_return.push_back(maxError);
         if (maxError > tolerance) {
             auto realSolution = _space->generateFunction(addedSolution);
             auto &realSolutionDer = realSolution->derivative(_order);
             levelIf(1) {
-                BEM::ColVector residual = BEM::linearCombination(completeMatrices, std::vector<double>(toAdd.begin(), toAdd.begin() + _dimensionQ + _dimensionD))*greedy.solveAtPoint(toAdd) - BEM::linearCombination(completeRhs, std::vector<double>(toAdd.begin() + _dimensionQ + _dimensionD, toAdd.end()));
-                double realError = std::sqrt(std::abs(residual.dot(lfMat.colPivHouseholderQr().solve(residual))));
-                msg(1) << "Max Error on " << counter << ": " << maxError << " - " << realError << " at point " << endMsg;
+                // BEM::ColVector residual = BEM::linearCombination(completeMatrices, std::vector<double>(toAdd.begin(), toAdd.begin() + _dimensionQ + _dimensionD))*greedy.solveAtPoint(toAdd) - BEM::linearCombination(completeRhs, std::vector<double>(toAdd.begin() + _dimensionQ + _dimensionD, toAdd.end()));
+                // double realError = std::sqrt(std::abs(residual.dot(lfMat.colPivHouseholderQr().solve(residual))));
+                // msg(1) << "Max Residual error with " << counter << " bases : " << realError << endMsg;
+                msg(2) << "Max Estimated error with " << counter << " bases: " << maxError << endMsg;
                 if(counter){
                     auto greedySolVec = greedy.solveAtPoint(toAdd);
                     auto greedySolution = _space->generateFunction(greedySolVec);
                     auto &greedySolutionDer = greedySolution->derivative(_order);
                     realSolutionDer -= greedySolutionDer;
-                    msg(1) << "real Error L2Norm: " << realSolutionDer.L2Norm() << endMsg;
+                    msg(2) << "Max Sobolev error with " << counter << " bases: " << realSolutionDer.L2Norm() << endMsg;
                     BEM::plotFunction("solAtPoint"+std::to_string(counter), *greedySolution, _mesh);
                 } else {
-                    msg(1) << "real Error L2Norm: " << realSolutionDer.L2Norm() << endMsg;
+                    msg(2) << "Max Sobolev error with " << counter << " bases: " << realSolutionDer.L2Norm() << endMsg;
                 }
+                errors->push_back(realSolutionDer.L2Norm());
+                estimators->push_back(maxError);
+                msg(2) << "---------------------------------" << endMsg;
                 BEM::plotFunction("basis"+std::to_string(counter), *(_space->generateFunction(addedSolution)), _mesh);
             }
             greedy.loadBasis(addedSolution/addedSolution.norm());
             counter++;
         } else {
             levelIf(1) {
-                msg(1) << "Done with max error on " << counter << ": " << maxError << endMsg;
+                msg(2) << "Finished" << endMsg;
+                msg(2) << "Max Estimated error with " << counter << " bases: " << maxError << endMsg;
                 auto greedySolution = _space->generateFunction(greedy.solveAtPoint(toAdd));
                 auto &greedySolutionDer = greedySolution->derivative(_order);
                 auto realSolution = _space->generateFunction(addedSolution);
                 auto &realSolutionDer = realSolution->derivative(_order);
                 realSolutionDer -= greedySolutionDer;
-                msg(1) << "real Error: " << realSolutionDer.L2Norm() << endMsg;
+                errors->push_back(realSolutionDer.L2Norm());
+                estimators->push_back(maxError);
+                msg(1) << "Estimator:";
+                for (const auto &val : *estimators) {
+                    std::cout << " " << val;
+                }
+                std::cout << endMsg;
+                msg(1) << "Error:    ";
+                for (const auto &val : *errors) {
+                    std::cout << " " << val;
+                }
+                std::cout << endMsg;
+                msg(2) << "Max Sobolev error with " << counter << " bases: " << realSolutionDer.L2Norm() << endMsg;
                 BEM::plotFunction("solAtPoint"+std::to_string(counter), *greedySolution, _mesh);
             }
         }
@@ -402,6 +422,7 @@ void RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::Interval1D> limit
             std::cout << "Max test Error := " << maxTestError << std::endl;
         }
     }
+    return errors_return;
 }
 
 /**

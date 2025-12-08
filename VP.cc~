@@ -1,0 +1,296 @@
+#include <GreenQP.h>
+#include <WeaklySingular.h>
+#include <Curve.h>
+#include <DiscreteSpace.h>
+#include <ScalarValuedFunction.h>
+#include <RegularP0.h>
+#include <MyTypes.h>
+#include <cmath>
+#include <vector>
+#include <iostream>
+#include <fstream>
+#include <Utilities.h>
+#include <ParametricProblem.h>
+#include <Halton.h>
+#include <tbb/parallel_for.h>
+#include <GreenL.h>
+#include <chrono>
+#include <boost/program_options/options_description.hpp>
+#include <boost/program_options/variables_map.hpp>
+#include <boost/program_options/parsers.hpp>
+#include <PECGrating.h>
+#include <PECGratingReduced.h>
+#include <unordered_set>
+#include <progressbar.hpp>
+#include <DiscreteSpaceMatrixMgr.h>
+#include <Msg.h>
+useMessages("MAIN");
+namespace po = boost::program_options;
+
+static void runAndPlotSolutionForHolo(double period, double wavenumber, double angle, int N, std::vector<double> sinVector, std::vector<double> cosVector) {
+
+    std::cout << "Wavenumber: " << wavenumber << std::endl;
+    std::cout << "Period: " << period << std::endl;
+    std::cout << "Wavelength/Period: " << 2.*M_PI/(wavenumber*period) << std::endl;
+    std::cout << "Angle: " << angle/M_PI <<  " x PI"  << std::endl;
+    TrigonometricCurve curve(period, 0., (sinVector), (cosVector));
+    std::cout << cosVector[0] << std::endl;
+    PECGrating prob(new TrigonometricCurve(period, 0., (sinVector), (cosVector)), angle, wavenumber, N, 50);
+    auto start = std::chrono::system_clock::now();
+    prob.buildDiscrete();
+    auto end = std::chrono::system_clock::now();
+    auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+    std::cout << elapsed.count() << "[ms]" << std::endl;
+    prob.solve();
+    std::cout << prob.efficiency(0) << std::endl;
+    auto sol = prob.getSpace().generateFunction(prob.getSolutionVec());
+    BEM::plotFunction("solution", *sol);
+    // prob.plotSolution("Solution_P" +std::to_string(period) + "_k" + std::to_string(wavenumber) + "_ang" +std::to_string(angle) + "_N" + std::to_string(N) + ".txt");
+}
+
+static void Reliability(double period, double wavenumber, double angle, std::vector<double> sinVector, std::vector<double> cosVector, double pertSize, int decay, int DoF, int trainingSamples, int RB)
+{
+    unsigned greenTerms = 30;
+    PECGrating Nominal(new TrigonometricCurve(period, 0., (sinVector), (cosVector)), angle, wavenumber, DoF, greenTerms);
+    startTimer(nom);
+    Nominal.buildDiscrete();
+    Nominal.solve();
+    stopTimer(nom,"nominal");
+    double nomEf = Nominal.efficiency(-3);
+    {
+        auto vec = Nominal.getSolutionVec();
+        auto &space = Nominal.getSpace();
+        auto solutionFun = space.generateFunction(vec);
+        BEM::plotFunction("nominal",*solutionFun);
+    }
+    UQProblemFactoryReduced gen(period, angle, wavenumber, pertSize, decay, DoF, std::vector<double>{sinVector}, std::vector<double>{cosVector}, greenTerms);
+    UQProblemFactory testingFactory(period, angle, wavenumber, pertSize, decay, DoF, std::vector<double>{sinVector}, std::vector<double>{cosVector}, greenTerms);
+    std::cout << nomEf << std::endl;
+    startTimer(training);
+    gen.trainEmpirical(trainingSamples, 1./RB);
+    stopTimer(training, "Training")
+    // RandomProblemFactory &factGen = gen;
+    std::vector<double> effic;
+    int tot90=0;
+    int tot95=0;
+    int tot99=0;
+    int len = 20000;
+    progressbar bar(len);
+    // std::ofstream myFile;
+    // myFile.open("geos.txt");
+    startTimer(reduced);
+    for (int i = 1; i<len+1; i++) {
+        auto testProb = testingFactory.RandomProblemFactory::generateNewTestingProblem();
+        auto PECProb = static_cast<PECGrating*>(testProb.get());
+        const Curve2D& curve = PECProb->getCurve();
+        // for (const auto &val : curve.getParameters()) {
+        //     myFile << val << " ";
+        // }
+        // myFile << std::endl;
+        // continue;
+        //startTimer(full);
+        PECProb->buildDiscrete();
+        PECProb->solve();
+        auto fullEf = PECProb->efficiency(-3);
+        // std::cout << PECProb->efficiency(-3) << std::endl;
+        //stopTimer(full, "FULL");
+        //continue;
+        // {
+        //     auto vec = PECProb->getSolutionVec();
+        //     auto &space = PECProb->getSpace();
+        //     auto solutionFun = space.generateFunction(vec);
+        //     BEM::plotFunction("realization"+std::to_string(i),*solutionFun);
+        // }
+        // std::cout << i << std::endl;
+        // continue;
+        //stopTimer(full, "FULL");
+        // auto prob = factGen.generateNewProblem();
+        auto prob = gen.generateProblemFromCurve(new TrigonometricCurve(static_cast<const TrigonometricCurve &>(curve)));
+        // startTimer(red);
+        prob->buildDiscrete();
+        prob->solve();
+        // stopTimer(red,"reduced");
+        auto redEf = static_cast<PECGrating *>(prob.get())->efficiency(-3);
+        std::cout << redEf << ", " << fullEf << ", " << std::abs(redEf - fullEf) << ", " << std::abs(redEf - fullEf)/std::abs(fullEf) << std::endl;
+        continue;
+        effic.push_back(static_cast<PECGrating *>(prob.get())->efficiency(-3));
+        if (effic.back() < nomEf*0.9) {
+            tot90++;
+        }
+        if (effic.back() < nomEf*0.95) {
+            tot95++;
+        }
+        if (effic.back() < nomEf*0.99) {
+            tot99++;
+        }
+
+        if (i == 1000) {
+            std::cout << tot99*1./(i) << std::endl;
+        }
+        if (i == 2000) {
+            std::cout << tot99*1./(i) << std::endl;
+        }
+
+        if (i == 4000) {
+            std::cout << tot99*1./(i) << std::endl;
+        }
+
+        if (i == 8000) {
+            std::cout << tot99*1./(i) << std::endl;
+        }
+
+        if (i == 16000) {
+            std::cout << tot99*1./(i) << std::endl;
+        }
+
+
+
+        // std::cout << effic.back() << std::endl;
+        // std::cout <<PECProb->efficiency(-1) << std::endl;
+    }
+    stopTimer(reduced, "Reduced")
+    return;
+    std::cout << tot90*1./len << "%" << std::endl;
+    std::cout << tot95*1./len << "%" << std::endl;
+    std::cout << tot99*1./len << "%" << std::endl;
+    
+}
+
+static void SLEmpiricalTest(double period, double wavenumber, double angle, std::vector<double> sinVector, std::vector<double> cosVector, double pertSize, int decay, int DoF, int overKillDoF, int trainingSamples, int testingSamples, int RB, int numOfRealizations)
+{
+    unsigned greenTerms = 2;
+    UQProblemFactory testingFactory(period, angle, wavenumber, pertSize, decay, overKillDoF, std::vector<double>{sinVector}, std::vector<double>{cosVector}, greenTerms);
+    std::vector<std::shared_ptr<UQProblemFactoryReduced>> uqVector;
+    
+    TrigonometricCurve nominalCurve(period, 0, sinVector, cosVector);
+    PECGrating nominalGrating(new TrigonometricCurve(nominalCurve), angle, wavenumber, overKillDoF, greenTerms);
+    nominalGrating.buildDiscrete();
+    nominalGrating.solve();
+    auto &nominalMatrix = nominalGrating.getMatrix();
+    std::cout << std::abs((nominalMatrix*nominalGrating.getSolutionVec()).dot(nominalGrating.getSolutionVec())) << std::endl;
+    RegularP0_1D fine(nominalCurve, overKillDoF);
+    RegularP0_1D coarse(nominalCurve, DoF);
+    auto &matrixMgr = DiscreteSpaceMatrixMgr_1D::get();
+    auto LHFC = matrixMgr.getData(coarse, fine).transpose();
+    auto RHFC = matrixMgr.getData(coarse, fine);
+    auto LHFCP = matrixMgr.getData(fine, coarse);
+
+    progressbar barR(numOfRealizations);
+    for (int i = 0; i < numOfRealizations; ++i) {
+        barR.update();
+        uqVector.emplace_back(new UQProblemFactoryReduced(period, angle, wavenumber, pertSize, decay, DoF, std::vector<double>{sinVector}, std::vector<double>{cosVector}, greenTerms));
+        uqVector.back()->trainEmpirical(trainingSamples, (1./RB));
+    }
+
+    std::vector<double> _solutionError(numOfRealizations, 0.0);
+    std::vector<double> _matrixError(numOfRealizations, 0.0);
+    
+    int envBatch = BEM::getEnv<int>("TEST_BATCH_SIZE");
+    int batchSize = envBatch > 0 ? envBatch : 10;
+    int numBatches = std::ceil(testingSamples/batchSize);
+    progressbar bar(batchSize*numBatches);
+    int counter = 0;
+    
+    for (int batch = 0; batch < numBatches; ++batch) {
+        std::vector<double> errorVec(batchSize, 0);
+        std::vector<double> normVec(batchSize, 0);
+        std::vector<std::unique_ptr<Problem>> batchSet;
+        std::vector<std::vector<BEM::ColVector>> solutionDiffVector(numOfRealizations, std::vector<BEM::ColVector>());
+        std::vector<std::vector<BEM::Matrix>> matrixDiffVector(numOfRealizations, std::vector<BEM::Matrix>());
+        for (int i = 0; i < batchSize; ++i) {
+            bar.update();
+            auto testProb = testingFactory.RandomProblemFactory::generateNewTestingProblem();
+            auto PECProb = static_cast<PECGrating*>(testProb.get());
+            const Curve2D& curve = PECProb->getCurve();
+            PECProb->buildDiscrete();
+            PECProb->solve();
+            for (int realization = 0; realization < numOfRealizations; ++realization) {
+                auto &uq = uqVector[realization];
+                auto iProb = uq->generateProblemFromCurve(new TrigonometricCurve(static_cast<const TrigonometricCurve &>(curve)));
+                auto trueRHS = iProb->getRHS();
+                auto interpolation = iProb->interpolatedMatrix();
+                matrixDiffVector[realization].push_back(BEM::product(BEM::product(LHFC,interpolation), RHFC) - PECProb->interpolatedMatrix());
+                BEM::ColVector solutionVector(interpolation.colPivHouseholderQr().solve(trueRHS));
+                auto solutionFunction = coarse.DiscreteSpace_1D::generateFunction(solutionVector);
+                BEM::plotFunction("sol"+std::to_string(counter++), *solutionFunction);
+                solutionDiffVector[realization].push_back(LHFCP*solutionVector - PECProb->getSolutionVec());
+            }
+        }
+        
+        for (int realization = 0; realization < numOfRealizations; ++realization) {
+            std::vector<double> localMatrixError(batchSize, 0.0);
+            std::vector<double> localSolutionError(batchSize, 0.0);
+            tbb::parallel_for(tbb::blocked_range<int>(0, batchSize), [&](const tbb::blocked_range<int> &r) {
+                for (int i = r.begin(); i!=r.end(); ++i) {
+                    localMatrixError[i] += matrixDiffVector[realization][i].operatorNorm()/testingSamples;
+                    localSolutionError[i] += std::abs((nominalMatrix*solutionDiffVector[realization][i]).dot(solutionDiffVector[realization][i]))/testingSamples;
+                }
+            });
+            _matrixError[realization] += std::accumulate(localMatrixError.begin(), localMatrixError.end(), 0.0);
+            _solutionError[realization] += std::accumulate(localSolutionError.begin(), localSolutionError.end(), 0.0);
+        }
+    }
+    
+    std::cout << "======" << std::endl;
+    std::cout << "Matrix Error: ";
+    std::cout << "[" << std::sqrt(_matrixError[0]);
+    for (int i = 1; i < numOfRealizations; ++i) {
+        std::cout << ", " << std::sqrt(_matrixError[i]);
+    }
+    std::cout << "]" << std::endl;
+
+    std::cout << "Solution Error: ";
+    std::cout << "[" << std::sqrt(_solutionError[0]);
+    for (int i = 1; i < numOfRealizations; ++i) {
+        std::cout << ", " << std::sqrt(_solutionError[i]);
+    }
+    std::cout << "]" << std::endl;    
+    std::cout << "DoF: " << DoF << std::endl;
+    std::cout << "Work: " << trainingSamples*DoF*DoF << std::endl;
+    
+}
+
+int main(int argc, char* argv[]) {
+    po::options_description desc("Options");
+    desc.add_options()("Problem", po::value<int>(), "Specify problem to solve")
+        ("help", "Show help menu")
+        ("P", po::value<double>(), "Period")
+        ("WL", po::value<double>(), "Wavelength")
+        ("WN", po::value<double>(), "Wavenumber")
+        ("ANG", po::value<double>(), "Angle")
+        ("DOF", po::value<int>(), "NumOfElements")
+        ("OK", po::value<int>(), "NumOfElements for Overkill")
+        ("SIN", po::value<std::vector<double>>()->multitoken(), "SinCoef")
+        ("COS", po::value<std::vector<double>>()->multitoken(), "CosCoef")
+        ("DCY", po::value<double>(), "Decay")
+        ("PS", po::value<double>(), "Perturbation size")
+        ("TG", po::value<int>(), "TrainingSamples")
+        ("TT", po::value<int>(), "TestingSamples")
+        ("RL", po::value<int>(), "Realizations")
+        ("RBG", po::value<int>(), "RBGreen");
+    
+    po::variables_map vm;
+    po::store(po::parse_command_line(argc, argv, desc), vm);
+    po::notify(vm);
+    if (vm.count("help")) {
+        std::cout << desc << std::endl;
+        return 1;
+    }
+    
+    if (vm.count("P")) {
+        if (vm["Problem"].as<int>() == 1){
+            runAndPlotSolutionForHolo(vm["P"].as<double>(), vm.count("WL") ? 2.*M_PI/vm["WL"].as<double>() : vm["WN"].as<double>(),  vm["ANG"].as<double>(), vm["DOF"].as<int>(), vm["SIN"].as<std::vector<double>>(), vm["COS"].as<std::vector<double>>());
+            return 0;
+        }
+
+        if (vm["Problem"].as<int>() == 2) {
+            SLEmpiricalTest(vm["P"].as<double>(), vm.count("WL") ? 2.*M_PI/vm["WL"].as<double>() : vm["WN"].as<double>(),  vm["ANG"].as<double>(), vm["SIN"].as<std::vector<double>>(), vm["COS"].as<std::vector<double>>(), vm["PS"].as<double>(), vm["DCY"].as<double>(), vm["DOF"].as<int>(), vm["OK"].as<int>(), vm["TG"].as<int>(), vm["TT"].as<int>(), vm["RBG"].as<int>(), vm["RL"].as<int>());
+        }
+
+        if (vm["Problem"].as<int>() == 3) {
+            Reliability(vm["P"].as<double>(), vm.count("WL") ? 2.*M_PI/vm["WL"].as<double>() : vm["WN"].as<double>(),  vm["ANG"].as<double>(), vm["SIN"].as<std::vector<double>>(), vm["COS"].as<std::vector<double>>(), vm["PS"].as<double>(), vm["DCY"].as<double>(), vm["DOF"].as<int>(), vm["TG"].as<int>(), vm["RBG"].as<int>());
+        }
+        
+    }
+    return 0;
+}
