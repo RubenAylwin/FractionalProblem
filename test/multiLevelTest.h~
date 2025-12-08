@@ -1,8 +1,0 @@
-#ifndef MULTILEVEL_TEST
-#define MULTILEVEL_TEST
-/*
- *TESTS FOR MULTILEVEL OPERATOR
- */
-#include <MultiLevelIntegralOperator.h>
-
-#endif
