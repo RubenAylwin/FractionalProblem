@@ -526,3 +526,40 @@ std::vector<BEM::Matrix> BEM::reduceMatrices(const std::vector<BEM::Matrix> &ful
     return reducedMatrices;
 }
 
+std::pair<double, double> BEM::getExponentialDecay(const std::vector<double> &xData, const std::vector<double> &yData)
+{
+    // Correctness checks
+    for (const auto &val : yData) {
+        assert(val > 0 and "Fitting exponential to non positive data.");
+    }
+    assert(xData.size() == yData.size() and "Fitting exponential with non-fitting x and y data.");
+
+    // Get log of yData
+    std::vector<double> logYData{yData};
+    for (auto &val : logYData) {
+        val = std::log(val);
+    }
+
+    //Solve by ATA method.
+    double a11 = 0, a12 = 0, a21 = 0, a22 = 0, f1 = 0, f2 = 0;
+    for (size_t i = 0; i < yData.size(); ++i) {
+        a11 += 1;
+        a12 += xData[i];
+        a21 += xData[i];
+        a22 += xData[i]*xData[i];
+        f1 += logYData[i];
+        f2 += logYData[i]*xData[i];
+    }
+
+    double det = a11*a22-a12*a21;
+    assert(std::abs(det)>0 and "Got null determinant");
+
+    double ai11 = a22/det;
+    double ai12 = -a12/det;
+    double ai21 = -a21/det;
+    double ai22 = a11/det;
+
+    double b = ai11*f1 + ai12*f2;
+    double m = ai21*f1 + ai22*f2;
+    return {b,m};
+}

@@ -9,6 +9,7 @@
 #include <fstream>
 #include <Utilities.h>
 #include <chrono>
+#include <numeric>
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/parsers.hpp>
@@ -134,10 +135,16 @@ void evaluateRBforRL_list(std::vector<int> order, std::string typeD, std::string
 {
     for (auto s : order){
         auto vec = evaluateRBforRL(s, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, points, ms);
-        for (auto val : vec) {
-            std::cout << val << " - ";
+        std::cout << "ORDER = " << s << std::endl;
+        std::cout << "Errors: [" << vec[0];
+        for (size_t i = 1; i < vec.size(); ++i) {
+            std::cout << ", " << vec[i];
         }
-        std::cout << std::endl;
+        std::vector<double> xData(vec.size(), 0.0);
+        std::iota(xData.begin(), xData.end(), 1.);
+        auto fitExp = BEM::getExponentialDecay(xData, vec);
+        std::cout << "]. Rate = " << fitExp.second << " - exp(" << fitExp.first << " + " << fitExp.second << "*x)" << std::endl;
+        std::cout << std::string(20, '-') << std::endl;
     }
         
 }
@@ -178,14 +185,15 @@ int main(int argc, char* argv[]) {
     auto typeD = vm["dt"].as<std::string>();
     auto typeQ = vm["qt"].as<std::string>();
     int ms = readOption(vm, std::string("mn"), 100);
-    int order = readOption(vm, std::string("fo"), 70);
+
             
     if (vm["Problem"].as<int>() == 1){
+        int order = readOption(vm, std::string("fo"), 70);
         std::cout << "Solving Riemann Liouville Problem with specified parameters." << std::endl;    
         solveRLProblem(order, typeD, typeQ, dVec, qVec, rhsVec, ms);
         return 0;
     } else if (vm["Problem"].as<int>() == 2){
-
+        int order = readOption(vm, std::string("fo"), 70);
         auto dVarVec = readOption(vm, std::string("dv"), BEM::CVector(dVec.size(), 0.0));
         auto qVarVec = readOption(vm, std::string("qv"), BEM::CVector(qVec.size(), 0.0));
         auto glPoints = readOption(vm, std::string("rbp"), 10);

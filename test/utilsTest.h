@@ -62,6 +62,15 @@ namespace UtilsTest{
         msg(1) << "end Utils::MatrixProductRealComplex" << endMsg;
     }
 
+    BOOST_AUTO_TEST_CASE(ExponentialDecay) {
+        msg(1) << "start Utils::ExponentialDecay" << endMsg;
+        std::vector<double> xx{1., 2., 3.};
+        std::vector<double> yy{2., 4., 8.};
+        auto result = BEM::getExponentialDecay(xx, yy);
+        BOOST_CHECK(std::abs(result.first) < 1E-10);
+        BOOST_CHECK_CLOSE(result.second, 0.6931471806, 1E-6);
+        msg(1) << "end Utils::ExponentialDecay" << endMsg;
+    }
     
     BOOST_AUTO_TEST_SUITE_END()
 }
