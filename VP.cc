@@ -226,7 +226,7 @@ int main(int argc, char* argv[]) {
             std::cerr << "Quitting without solving." << std::endl;
             return -1;
         }
-        std::cout << "Constructing and evaluating a Reduced Basis for the Riemann Liouville Problem." << std::endl;
+        std::cout << "Constructing and evaluating a series of Reduced Basis for the Riemann Liouville Problem." << std::endl;
         evaluateRBforRL_list(sVec, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, glPoints, ms);
     } else {
         std::cerr << "Invalid problem type." << std::endl;

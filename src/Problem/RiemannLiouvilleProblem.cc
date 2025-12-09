@@ -208,7 +208,7 @@ RiemannLiouvilleMeshFactory::RiemannLiouvilleMeshFactory(unsigned numberOfElemen
     _numberOfElements(numberOfElements),
     _order(order),
     _curve(1.),
-    _mesh(_numberOfElements, _curve),
+    _mesh(_numberOfElements, _curve, 1./(2.*order/100.-1.)),
     _dimensionQ{qVector.size()},
     _dimensionD{dVector.size()},
     _dimensionF{fVector.size()},

@@ -112,7 +112,7 @@ private:
     unsigned _numberOfElements = 0u;    
     int _order = 0;
     StraightCurve _curve;
-    MeshCurve1D _mesh;
+    MeshCurveGraded1D _mesh;
     size_t _dimensionQ;
     size_t _dimensionD;
     size_t _dimensionF;
