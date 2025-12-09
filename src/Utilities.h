@@ -95,7 +95,7 @@ namespace BEM {
         }
         return std::sqrt(result);
     }
-    std::pair<double, double> getExponentialDecay(const std::vector<double> &xData, const std::vector<double> &yData);
+    std::pair<double, double> getExponentialDecay(const std::vector<double> &xData, const std::vector<double> &yData, const double &power);
 }
 
 #endif

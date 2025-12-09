@@ -133,6 +133,20 @@ std::vector<double> evaluateRBforRL(int order, std::string typeD, std::string ty
 
 void evaluateRBforRL_list(std::vector<int> order, std::string typeD, std::string typeQ, BEM::CVector dVec, BEM::CVector qVec, BEM::CVector dVarVec, BEM::CVector qVarVec, BEM::CVector rhsVec, int points, int ms)
 {
+
+    int power = 0;
+    for (const auto &val : dVarVec) {
+        if (std::abs(val)>0) {
+            power++;
+        }
+    }
+    for (const auto &val : qVarVec) {
+        if (std::abs(val)>0) {
+            power++;
+        }
+    }
+
+    std::vector<double> rates{};
     for (auto s : order){
         auto vec = evaluateRBforRL(s, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, points, ms);
         std::cout << "ORDER = " << s << std::endl;
@@ -142,11 +156,22 @@ void evaluateRBforRL_list(std::vector<int> order, std::string typeD, std::string
         }
         std::vector<double> xData(vec.size(), 0.0);
         std::iota(xData.begin(), xData.end(), 1.);
-        auto fitExp = BEM::getExponentialDecay(xData, vec);
-        std::cout << "]. Rate = " << fitExp.second << " - exp(" << fitExp.first << " + " << fitExp.second << "*x)" << std::endl;
+        auto fitExp = BEM::getExponentialDecay(xData, vec, power);
+        rates.push_back(fitExp.second);
+        std::cout << "]. Rate = " << fitExp.second << " - exp(" << fitExp.first << " + " << fitExp.second << "*x^" << power << ")" << std::endl;
         std::cout << std::string(20, '-') << std::endl;
     }
-        
+    std::cout << "Rates: [" << rates[0];
+    for (size_t i = 1; i < rates.size(); ++i) {
+        std::cout << ", " << rates[i];
+    }
+    std::cout << "]" << std::endl;
+    std::cout << "Orders: [" << 2.*order[0]/100.;
+    for (size_t i = 1; i < rates.size(); ++i) {
+        std::cout << ", " << 2.*order[i]/100.;
+    }
+    std::cout << "]" << std::endl;
+
 }
 
 int main(int argc, char* argv[]) {
