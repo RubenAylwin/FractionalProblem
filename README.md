@@ -32,8 +32,8 @@ The following options need to be given to the binary with double dash (--):
 - "d" -> A space separated sequence of real numbers indicating the coefficients for an expansion of the diffusion coefficient.
 - "q" -> A space separated sequence of real numbers indicating the coefficients for an expansion of the reaction coefficient.
 - "rhs"-> A space separated sequence of real numbers indicating the coefficients for polynomial expansion of the right hand side.
-- "fo"-> A number between 50 and 100 (non inclusive) indicating the half-order of the fractional derivative x100 (if we wish to consider, e.g., s = 1.4 we take --fo 70).
-- "mn" -> Number of mesh elements (uniform mesh of the unit interval).
+- "fo"-> A number between 50 and 100 (non inclusive) indicating the half-order of the fractional derivative $\times 100$ (if we wish to consider, e.g., s = 1.4 we take --fo 70).
+- "mn" -> Number of mesh elements (uniform mesh of the unit interval)
 
 E.g. To solve the problem with the coefficients $d(x) = 4+\sin(2\pi x)$ and $q(x) = \cos(2\pi x)$ and the right hand side $f(x)=x(1-x)$, for $s=1.5$ and $200$ elements in the mesh, we take
 ```
@@ -46,9 +46,22 @@ All previous parameters must be present. Moreover,
 - "Problem" -> set to 2 to evaluate a RB.
 - "dv" -> For each parameter in the expansion indicated in "d", indicate a $\pm$ variation for it.
 - "qv" -> For each parameter in the expansion indicated in "q", indicate a $\pm$ variation for it.
+- "rbp" -> Number of quadrature points for the greedy algorithm in each dimension.
 
-E.g. To evaluate a RB for the problem with the coefficients $d(x) = \alpha+\beta\sin(2\pi x)$ and $q(x) = \gamma\cos(2\pi x)$, where $\alpha\in (3, 5),\ \beta\in (0, 1)$ and $\gamma\in(0, 2)$, and the right hand side $f(x)=x(1-x)$, for $s=1.5$ and $200$ elements in the mesh, we take
+E.g. To evaluate a RB for the problem with the coefficients $d(x) = \alpha+\beta\sin(2\pi x)$ and $q(x) = \gamma\cos(2\pi x)$, where $\alpha\in (3, 5),\ \beta\in (0, 1)$ and $\gamma\in(0, 2)$, and the right hand side $f(x)=x(1-x)$, for $s=1.5$, $200$ elements in the mesh and $10$ quadrature points in each dimension, we take
 ```
-./VP --Problem 1 --dt trig --qt trig --d 4. .5 --q 0. 0. 1. --dv 1. .5 --qv 0. 0. 1. --rhs 0. 1. -1. --fo 75 --mn 200
+./VP --Problem 2 --dt trig --qt trig --d 4. .5 --q 0. 0. 1. --dv 1. .5 --qv 0. 0. 1. --rhs 0. 1. -1. --fo 75 --mn 200 --rbp 10
 ```
 This will print out messages with the approximation information through the weak greedy algorithm. The environment variable "RIE_PROB" must be set to a value equal or higher than $1$.
+
+### To evaluate RBs for the RL problem for a series of orders
+All previous parameters must be present, except "fo", since now we add a new one for a list of orders. Moreover,
+- "Problem" -> set to 3 to evaluate a sequence of RBs.
+- "slist" -> List of orders to evaluate RBs on. Same format as "fo" before with integers between 50 and 100 (non inclusive) representing the half order $\times 100$.
+
+E.g. To evaluate a RB for the problem with the coefficients $d(x) = \alpha+\beta\sin(2\pi x)$ and $q(x) = \gamma\cos(2\pi x)$, where $\alpha\in (3, 5),\ \beta\in (0, 1)$ and $\gamma\in(0, 2)$, and the right hand side $f(x)=x(1-x)$, for $s=1.5$, $200$ elements in the mesh and $10$ quadrature points in each dimension, we take
+```
+./VP --Problem 2 --dt trig --qt trig --d 4. .5 --q 0. 0. 1. --dv 1. .5 --qv 0. 0. 1. --rhs 0. 1. -1. --fo 75 --mn 200 --rbp 10
+```
+This will print out messages with the approximation information for each order.
+We recommend the following environment variable to be set to "true": PARALLELIZE_MATRIX_CONSTRUCTION. This allows parallel computation of stiffness matrices in the FEM. 
