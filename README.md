@@ -61,7 +61,7 @@ All previous parameters must be present, except "fo", since now we add a new one
 
 E.g. To evaluate a RB for the problem with the coefficients $d(x) = \alpha+\beta\sin(2\pi x)$ and $q(x) = \gamma\cos(2\pi x)$, where $\alpha\in (3, 5),\ \beta\in (0, 1)$ and $\gamma\in(0, 2)$, and the right hand side $f(x)=x(1-x)$, for $s=1.5$, $200$ elements in the mesh and $10$ quadrature points in each dimension, we take
 ```
-./VP --Problem 2 --dt trig --qt trig --d 4. .5 --q 0. 0. 1. --dv 1. .5 --qv 0. 0. 1. --rhs 0. 1. -1. --fo 75 --mn 200 --rbp 10
+./VP --Problem 3 --dt trig --qt trig --d 4. .5 --q 0. 0. 1. --dv 1. .5 --qv 0. 0. 1. --rhs 0. 1. -1. --fo 75 --mn 200 --rbp 10
 ```
 This will print out messages with the approximation information for each order.
 We recommend the following environment variable to be set to "true": PARALLELIZE_MATRIX_CONSTRUCTION. This allows parallel computation of stiffness matrices in the FEM. 
