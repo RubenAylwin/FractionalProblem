@@ -18,6 +18,7 @@
 #include <RegularP1Mesh.h>
 #include <RiemannLiouville.h>
 #include <RiemannLiouvilleProblem.h>
+#include <ParametrizedFunction.h>
 #include <Msg.h>
 useMessages("MAIN");
 namespace po = boost::program_options;
@@ -124,7 +125,7 @@ std::vector<double> evaluateRBforRL(int order, std::string typeD, std::string ty
     auto est = [order, qSize, dSize](std::vector<double> point) -> double {
         double min = *std::min_element(point.begin() + qSize, point.begin() + dSize + qSize);
         double max = *std::max_element(point.begin() + qSize, point.begin() + dSize + qSize);
-        // return std::abs(std::cos(M_PI*order/100.));
+        return 0.5*(point[0]+2)*std::abs(std::cos(M_PI*order/100.)) - 0.5*point[0];
         return 0.5*((max + min)*std::abs(std::cos(M_PI*order/100.)) - (max - min));
     };
     RiemannLiouvilleMeshFactory factory(ms, order, qFunVec, dFunVec, VectorFun_2D{rhs2D});
@@ -147,6 +148,7 @@ void evaluateRBforRL_list(std::vector<int> order, std::string typeD, std::string
     }
 
     std::vector<double> rates{};
+    std::vector<double> constants{};
     for (auto s : order){
         auto vec = evaluateRBforRL(s, typeD, typeQ, dVec, qVec, dVarVec, qVarVec, rhsVec, points, ms);
         std::cout << "ORDER = " << s << std::endl;
@@ -158,7 +160,8 @@ void evaluateRBforRL_list(std::vector<int> order, std::string typeD, std::string
         std::iota(xData.begin(), xData.end(), 1.);
         auto fitExp = BEM::getExponentialDecay(xData, vec, power);
         rates.push_back(fitExp.second);
-        std::cout << "]. Rate = " << fitExp.second << " - exp(" << fitExp.first << " + " << fitExp.second << "*x^" << power << ")" << std::endl;
+        constants.push_back(std::exp(fitExp.first));
+        std::cout << "]. Rate = " << fitExp.second << " - exp( " << fitExp.first << " + " << fitExp.second << "*x^(1/" << power << ") )" << std::endl;
         std::cout << std::string(20, '-') << std::endl;
     }
     std::cout << "Rates: [" << rates[0];
@@ -166,7 +169,12 @@ void evaluateRBforRL_list(std::vector<int> order, std::string typeD, std::string
         std::cout << ", " << rates[i];
     }
     std::cout << "]" << std::endl;
-    std::cout << "Orders: [" << 2.*order[0]/100.;
+    std::cout << "Const: [" << constants[0];
+    for (size_t i = 1; i < rates.size(); ++i) {
+        std::cout << ", " << constants[i];
+    }
+    std::cout << "]" << std::endl;
+    std::cout << "Order: [" << 2.*order[0]/100.;
     for (size_t i = 1; i < rates.size(); ++i) {
         std::cout << ", " << 2.*order[i]/100.;
     }

@@ -839,6 +839,186 @@ namespace discreteMeshTests{
 
     BOOST_AUTO_TEST_SUITE_END()
 
+    /*
+     *TEST FOR P1 SPACE
+     */
+    BOOST_AUTO_TEST_SUITE(P1_L0)
+
+    BOOST_AUTO_TEST_CASE(ConstructorTest)
+    {
+        msg(1) << "start Discrete::P1_L0::ConstructorTest" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(10, curve);
+        RegularP1_L0Mesh_1D regular(mesh);
+        msg(1) << "end Discrete::P1_L0::ConstructorTest" << endMsg;
+    }
+
+    
+    BOOST_AUTO_TEST_CASE(EvaluationTest)
+    {
+        msg(1) << "start Discrete::P1_L0::EvaluationTest" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(10, curve);
+        RegularP1_L0Mesh_1D space(mesh);
+
+        auto &firstFun = space.basisFunction(0);
+        BOOST_CHECK_CLOSE(0.05, firstFun.evaluate(0, 0.05).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.15, firstFun.evaluate(0, 0.15).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.95, firstFun.evaluate(1, 0.05).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.85, firstFun.evaluate(1, 0.15).real(), tolerance);
+
+        auto &nextToLastFun = space.basisFunction(8);
+        BOOST_CHECK_CLOSE(0.05, nextToLastFun.evaluate(8, 0.05).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.95, nextToLastFun.evaluate(8,0.95).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.95, nextToLastFun.evaluate(9, 0.05).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.05, nextToLastFun.evaluate(9,0.95).real(), tolerance);
+        
+        auto &lastFun = space.basisFunction(9);
+        BOOST_CHECK_CLOSE(0.0, lastFun.evaluate(8, 0.05).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.0, lastFun.evaluate(8,0.95).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.05, lastFun.evaluate(9, 0.05).real(), tolerance);
+        BOOST_CHECK_CLOSE(0.95, lastFun.evaluate(9,0.95).real(), tolerance);
+
+        msg(1) << "end Discrete::P1_L0::EvaluationTest" << endMsg;
+    }
+    
+    BOOST_AUTO_TEST_CASE(InvalidFunctionTest)
+    {
+        msg(1) << "start Discrete::P1_L0::InvalidFunctionTest" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(10, curve);
+        RegularP1_L0Mesh_1D space(mesh);
+
+        BOOST_REQUIRE_THROW(space.basisFunction(10), std::invalid_argument);
+        msg(1) << "end Discrete::P1_L0::InvalidFunctionTest" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(TestingConstantFunction)
+    {
+        msg(1) << "start Discrete::P1_L0::TestingConstantFunction" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(20, curve);
+        RegularP1_L0Mesh_1D space(mesh);
+
+        ExplicitScalarFunction_2D function([&](double t, double s){ return 1. + 0*s;});
+        auto testingResult = space.testAgainstBasis(function);
+
+        for (size_t i = 0; i < testingResult.size()-1; ++i) {
+            BOOST_CHECK_CLOSE(testingResult[i].real(), 1.0/20, tolerance);
+        }
+        BOOST_CHECK_CLOSE(testingResult[testingResult.size()-1].real(), 1.0/40, tolerance);        
+        msg(1) << "end Discrete::P1_L0::TestingConstantFunction" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(TestingPolyFunction)
+    {
+        msg(1) << "start Discrete::P1_L0::TestingPolyFunction" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(20, curve);
+        RegularP1_L0Mesh_1D space(mesh);
+
+        ExplicitScalarFunction_2D function([&](double t, double s){ return t*t;});
+        auto testingResult = space.testAgainstBasis(function);
+        for (int i = 0; i < 19; ++i) {
+            BOOST_CHECK_CLOSE(testingResult[i].real(), (12.*(i+1)*(i+1) + 2.)/96000., tolerance);
+        }
+        int i = 19;
+        BOOST_CHECK_CLOSE(testingResult[19].real(), (6.*i*i+8*i+3)/96000., tolerance);
+        msg(1) << "end Discrete::P1_L0::TestingPolyFunction" << endMsg;
+    }
+
+
+    BOOST_AUTO_TEST_CASE(DiscreteFunction1)
+    {
+        msg(1) << "start Discrete::P1_L0::DiscreteFunction1" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(20, curve);
+        RegularP1_L0Mesh_1D space(mesh);
+        std::vector<BEM::Complex> base(20, 0.0);
+        base[0]=1.0+BEM::I*2.0;
+        auto fun = space.generateFunction(base);
+        BOOST_CHECK_CLOSE(fun->evaluate(0, 0.5).real(), 0.5, tolerance);
+        BOOST_CHECK_CLOSE(fun->evaluate(1, 0.25).real(), 0.75, tolerance);
+        msg(1) << "end Discrete::P1_L0::DiscreteFunction1" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(DiscreteFunctionDerivative)
+    {
+        msg(1) << "start Discrete::P1_L0::DiscreteFunctionDerivative" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(20, curve);
+        RegularP1_L0Mesh_1D space(mesh);
+        std::vector<BEM::Complex> base(20, 0.0);
+        base[0]=2.0;
+        base[1]=1.0+BEM::I*2.0;
+        base[10]=-1.0+BEM::I*2.0;
+        base[11]=-1.0-BEM::I*2.0;
+        base[12]=3.0+BEM::I*2.0;
+        auto fun = space.generateFunction(base);
+        auto &dFun = fun->derivative();
+        BEM::plotFunction("fun", *fun, mesh);
+        BEM::plotFunction("der", dFun, mesh);
+        msg(1) << "end Discrete::P1_L0::DiscreteFunctionDerivative" << endMsg;
+    }
+
+
+    BOOST_AUTO_TEST_CASE(DiscreteFunctionFracDer)
+    {
+        msg(1) << "start Discrete::P1_L0::DiscreteFunctionDerivative" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(20, curve);
+        RegularP1_L0Mesh_1D space(mesh);
+        RegularP1_0Mesh_1D space2(mesh);
+        for (size_t i = 0; i < 19; ++i) {
+            std::vector<BEM::Complex> base(20, 0.0);
+            base[i]=1.0+BEM::I*2.0;
+            std::vector<BEM::Complex> base2(19, 0.0);
+            base2[i]=1.0+BEM::I*2.0;
+            auto baseFun = space.generateFunction(base);
+            auto baseFun2 = space2.generateFunction(base2);
+            DiscreteFunctionMesh *fun = baseFun.get();
+            DiscreteFunctionMesh *fun2 = baseFun2.get();
+            RegularP1_L0Mesh_1D::P1Function *pFun = dynamic_cast<RegularP1_L0Mesh_1D::P1Function*>(fun);
+            RegularP1_0Mesh_1D::P1Function *pFun2 = dynamic_cast<RegularP1_0Mesh_1D::P1Function*>(fun2);
+            auto &dFunL = pFun->derivative(70);
+            auto &dFunL2 = pFun2->derivative(70);
+            for (size_t j = 0; j < 20; ++j) {
+                BOOST_CHECK_CLOSE(pFun->evaluate(j, 0.5).real(), pFun2->evaluate(j, 0.5).real(), tolerance);
+                BOOST_CHECK_CLOSE(dFunL.evaluate(j, 0.5).real(), dFunL2.evaluate(j, 0.5).real(), tolerance);
+            }
+        }
+        msg(1) << "end Discrete::P1_L0::DiscreteFunctionDerivative" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(DiscreteFunctionFracDer2)
+    {
+        msg(1) << "start Discrete::P1_L0::DiscreteFunctionDerivative2" << endMsg;
+        StraightCurve curve(1);
+        MeshCurve1D mesh(20, curve);
+        RegularP1_L0Mesh_1D space(mesh);
+        RegularP1_Mesh_1D space2(mesh);
+        for (size_t i = 0; i <= 19; ++i) {
+            std::vector<BEM::Complex> base(20, 0.0);
+            base[i]=1.0+BEM::I*2.0;
+            std::vector<BEM::Complex> base2(21, 0.0);
+            base2[i+1]=1.0+BEM::I*2.0;
+            auto baseFun = space.generateFunction(base);
+            auto baseFun2 = space2.generateFunction(base2);
+            DiscreteFunctionMesh *fun = baseFun.get();
+            DiscreteFunctionMesh *fun2 = baseFun2.get();
+            RegularP1_L0Mesh_1D::P1Function *pFun = dynamic_cast<RegularP1_L0Mesh_1D::P1Function*>(fun);
+            RegularP1_Mesh_1D::P1Function *pFun2 = dynamic_cast<RegularP1_Mesh_1D::P1Function*>(fun2);
+            auto &dFunL = pFun->derivative(70);
+            auto &dFunL2 = pFun2->derivative(70);
+            for (size_t j = 0; j < 20; ++j) {
+                BOOST_CHECK_CLOSE(pFun->evaluate(j, 0.5).real(), pFun2->evaluate(j, 0.5).real(), tolerance);
+                BOOST_CHECK_CLOSE(dFunL.evaluate(j, 0.5).real(), dFunL2.evaluate(j, 0.5).real(), tolerance);
+            }
+        }
+        msg(1) << "end Discrete::P1_L0::DiscreteFunctionDerivative2" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_SUITE_END()
 
     
     BOOST_AUTO_TEST_SUITE_END()

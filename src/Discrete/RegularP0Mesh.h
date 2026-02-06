@@ -53,6 +53,7 @@ public:
         DiscreteFunctionMesh &derivative(void) const override;
         friend class RegularP0Mesh_1D;
         friend class RegularP1_0Mesh_1D;
+        friend class RegularP1_L0Mesh_1D;
         friend class RegularP1_Mesh_1D;
         mutable std::mutex _derMutex;
         mutable std::mutex _supportMutex;

@@ -56,4 +56,16 @@ private:
     double _upper = 0.0;
 };
 
+/**
+ * @brief: Piecewise constant.
+ */
+class PwLinearFunction_1D : public ParametrizedFunction_1D {
+public:
+    PwLinearFunction_1D(double lower, double upper, BEM::CVector params);
+    BEM::Complex operator()(double t) const override;
+private:
+    double _lower = 0.0;
+    double _upper = 0.0;
+};
+
 #endif

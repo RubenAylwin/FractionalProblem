@@ -318,7 +318,7 @@ std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::In
         prob->buildDiscrete();
         completeMatrices.push_back(prob->getMatrix());
     }
-
+    msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy Computed Matrices" << endMsg;
     // Save RHS for affine decomposition
     for (size_t i = 0; i < _dimensionF; ++i) {
         std::vector<double> auxPoint(_dimensionQ + _dimensionD + _dimensionF, 0.0);
@@ -327,7 +327,7 @@ std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::In
         prob->buildDiscrete();
         completeRhs.push_back(prob->getRHS());
     }
-
+    msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy Computed RHS" << endMsg;
     // Get matrix for duality product. Here we are using leftDer*leftDer.
     _LF.reset(new LeftFracDerivative(*_space, _order));
     _LF->assembleMassMatrix();
@@ -336,23 +336,26 @@ std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::In
     // Create a greedy helper with the generated data
     _greedy.reset(new GreedyHelper(lfMat, completeMatrices, completeRhs, infSupEst));
     GreedyHelper &greedy = *_greedy;
-
+    
     
     // maxError in samples (initialized so that we enter the while loop)
     double maxError = tolerance + 1;
-    std::unique_ptr<std::list<double>> estimators(new std::list<double>{});
-    std::unique_ptr<std::list<double>> errors(new std::list<double>{});
-    
+    std::unique_ptr<std::vector<double>> estimators(new std::vector<double>{});
+    std::unique_ptr<std::vector<double>> errors(new std::vector<double>{});
+    msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy Beginning Loop" << endMsg;
     while (maxError > tolerance) {
         maxError = 0.0;
         std::vector<double> toAdd;
+        msg(7) << "RiemannLiouvilleMeshFactory::trainGreedy Start Error Computation" << endMsg;
         for (const auto &point : quadPoints) {
             double error = greedy.errorAtPoint(point);
+            msg(8) << "RiemannLiouvilleMeshFactory::trainGreedy Error " << error << endMsg;
             if (error > maxError) {
                 maxError = error;
                 toAdd = point;
             }
         }
+        msg(5) << "RiemannLiouvilleMeshFactory::trainGreedy Error Computation Found " << maxError << " as max error" << endMsg;
         BEM::ColVector addedSolution = BEM::linearCombination(completeMatrices, std::vector<double>(toAdd.begin(), toAdd.begin() + _dimensionQ + _dimensionD)).colPivHouseholderQr().solve(BEM::linearCombination(completeRhs, std::vector<double>(toAdd.begin() + _dimensionQ + _dimensionD, toAdd.end())));
         errors_return.push_back(maxError);
         if (maxError > tolerance) {
@@ -421,6 +424,10 @@ std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::In
             }
             std::cout << "Max test Error := " << maxTestError << std::endl;
         }
+    }
+    
+    levelIf(1) {
+        return *errors;
     }
     return errors_return;
 }

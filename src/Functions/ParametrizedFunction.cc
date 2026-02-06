@@ -105,3 +105,30 @@ BEM::Complex PwConstantFunction_1D::operator()(double t) const
     
     return _params[index];
 }
+
+/**
+ * @brief: Constructor. Saves parameters.
+ */
+PwLinearFunction_1D::PwLinearFunction_1D(double lower, double upper, BEM::CVector params) :
+    ParametrizedFunction_1D(params, lower, upper),
+    _lower{lower},
+    _upper{upper}
+{
+    msg(5) << "start::PwLinearFunction_1D::PwLinearFunction_1D()" << endMsg;
+    assert(params.size() > 1);
+    msg(5) << "end::PwLinearFunction_1D::PwLinearFunction_1D()" << endMsg;
+}
+
+/**
+ * @brief: Evaluation.
+ */
+BEM::Complex PwLinearFunction_1D::operator()(double t) const
+{
+    if (t < _lower or t > _upper) {
+        return 0.0;
+    }
+    double delta = (_upper - _lower)/(_params.size() - 1);
+    unsigned index = std::floor((t - _lower)/delta);
+    
+    return _params[index]+(t/delta-index)*_params[index+1];
+}

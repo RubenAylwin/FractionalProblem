@@ -546,9 +546,11 @@ std::pair<double, double> BEM::getExponentialDecay(const std::vector<double> &xD
         val = std::pow(val, 1./power);
     }
 
+    size_t dataLength = yData.size();
+    
     //Solve by ATA method.
     double a11 = 0, a12 = 0, a21 = 0, a22 = 0, f1 = 0, f2 = 0;
-    for (size_t i = 0; i < yData.size(); ++i) {
+    for (size_t i = 0; i < dataLength; ++i) {
         a11 += 1;
         a12 += powXData[i];
         a21 += powXData[i];
