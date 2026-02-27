@@ -737,7 +737,7 @@ DiscreteFunctionMesh &RegularP1_L0Mesh_1D::P1Function::derivative(void) const
  */
 DiscreteFunctionMesh &RegularP1_L0Mesh_1D::P1Function::derivative(int order) const
 {
-    assert(order < 100 and order > 49);
+    assert(order < 100 and order > 0);
     double fOrder = std::abs(order*0.01);
     std::lock_guard<std::mutex> lock(_derMutex);
     if (_fracDerivatives.find(order) == _fracDerivatives.end()) {

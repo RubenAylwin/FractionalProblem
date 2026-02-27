@@ -20,6 +20,8 @@
 #include <Eigen/SVD>
 #include <Eigen/Dense>
 #include <unsupported/Eigen/KroneckerProduct>
+#include <random>
+
 namespace riemannLiouvilleTests {
     static double tolerance = 1e-3;
     BOOST_AUTO_TEST_SUITE(Riemann)
@@ -648,7 +650,7 @@ namespace riemannLiouvilleTests {
         TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0});
         ExplicitScalarFunction_1D d([](double t)->BEM::Complex {return 1.0;});
         unsigned size = std::pow(2, 3);
-        int order = 70;
+        int order = 90;
         MeshCurve1D mesh(size, curve);
         RegularP1_L0Mesh_1D spaceTrial(mesh);
         RegularP0Mesh_1D spaceTest(mesh);
@@ -703,17 +705,18 @@ namespace riemannLiouvilleTests {
     BOOST_AUTO_TEST_CASE(SpaceTime)
     {
         TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0});
+        TrigonometricCurve curveT(0.5, 0, std::vector<double>{0}, std::vector<double>{0});
         ExplicitScalarFunction_1D d([](double t)->BEM::Complex {return 1.0;});
-        ExplicitScalarFunction_1D dRl([](double t)->BEM::Complex {return 1.0;});
         ExplicitScalarFunction_1D q([](double t)->BEM::Complex {return .0;});
-        unsigned sizeTime = std::pow(2, 7);
-        unsigned sizeSpace = std::pow(2, 4);
-        MeshCurve1D meshTime(sizeTime, curve);
+        unsigned sizeTime = std::pow(2, 6);
+        unsigned sizeSpace = std::pow(2, 5);
+        MeshCurve1D meshTime(sizeTime, curveT);
         MeshCurve1D meshSpace(sizeSpace, curve);
         RegularP1_L0Mesh_1D spaceTrialTime(meshTime);
         RegularP0Mesh_1D spaceTestTime(meshTime);
         RegularP1_0Mesh_1D spaceSpace(meshSpace);
-        int orderTime = 55;
+        int orderTime = BEM::getEnv<int>("FRACORDER");
+        ExplicitScalarFunction_1D dRl([orderTime](double t)->BEM::Complex {return 1;});
         // Time
         FractionalParabolic frac(spaceTrialTime, spaceTestTime, orderTime, d);
         L2Mesh l2(spaceTrialTime, spaceTestTime, d);
@@ -721,7 +724,7 @@ namespace riemannLiouvilleTests {
         frac.assembleMassMatrix();
 
         // Space
-        int orderSpace = 90;
+        int orderSpace = 99;
         RiemannLiouvilleMesh rlm(spaceSpace, RiemannLiouvilleMesh::Side::LEFT, orderSpace, dRl, q);
         L2Mesh l2s(spaceSpace, spaceSpace, d);
 
@@ -741,10 +744,15 @@ namespace riemannLiouvilleTests {
                 }
             }            
         }
-        ExplicitScalarFunction_2D fTime([](double t, double s)->BEM::Complex {return 1.0;});
+        ExplicitScalarFunction_2D fTime([](double t, double s)->BEM::Complex {
+            if (t>0.25) {
+                return 0.0;
+            }
+            return std::sin(M_PI*t/0.25);
+        });
         auto vecTime = spaceTestTime.testAgainstBasis(fTime);
         
-        ExplicitScalarFunction_2D fSpace([](double t, double s)->BEM::Complex {return t;});
+        ExplicitScalarFunction_2D fSpace([](double t, double s)->BEM::Complex {return t*(1-t);});
         auto vecSpace = spaceSpace.testAgainstBasis(fSpace);
         
         for (int i = 0; i < spaceSpace.getSize(); ++i){
@@ -759,8 +767,104 @@ namespace riemannLiouvilleTests {
         for (int j = 0 ; j < spaceTrialTime.getSize(); ++j) {
             std::vector<BEM::Complex> vec(vecSol.begin()+j*spaceSpace.getSize(), vecSol.begin()+(j+1)*spaceSpace.getSize());
             auto solFun = spaceSpace.generateFunction(vec);
-            BEM::plotFunction("testSol"+std::to_string(j), *solFun, meshSpace);
+            BEM::plotFunction("testSol"+std::to_string(orderTime)+"_"+std::to_string(j), *solFun, meshSpace);
         }
+    }
+
+    BOOST_AUTO_TEST_CASE(SpaceTimePara)
+    {
+        TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0});
+        TrigonometricCurve curveT(1, 0, std::vector<double>{0}, std::vector<double>{0});
+        ExplicitScalarFunction_1D d([](double t)->BEM::Complex {return 1.0;});
+        ExplicitScalarFunction_1D q([](double t)->BEM::Complex {return .0;});
+        unsigned sizeTime = std::pow(2, 6);
+        unsigned sizeSpace = std::pow(2, 5);
+        MeshCurve1D meshTime(sizeTime, curveT);
+        MeshCurve1D meshSpace(sizeSpace, curve);
+        RegularP1_L0Mesh_1D spaceTrialTime(meshTime);
+        RegularP0Mesh_1D spaceTestTime(meshTime);
+        RegularP1_0Mesh_1D spaceSpace(meshSpace);
+        int orderTime = BEM::getEnv<int>("FRACORDER");
+        // Time
+        FractionalParabolic frac(spaceTrialTime, spaceTestTime, orderTime, d);
+        L2Mesh l2(spaceTrialTime, spaceTestTime, d);
+        l2.assembleMassMatrix();
+        frac.assembleMassMatrix();
+        std::unique_ptr<BEM::Matrix> svdMat(nullptr);
+        svdMat.reset(new BEM::Matrix(spaceSpace.getSize(), spaceTrialTime.getSize()*20));
+        int colcounter = 0;
+        std::uniform_real_distribution<double> _unif(0.1, 1.9);
+        std::mt19937 _rng((std::random_device())());
+
+
+        for (int rand = 0; rand < 10; rand++) {
+            // Space
+            int orderSpace = 90;
+            double a = _unif(_rng);
+            double b = _unif(_rng);
+            double c = _unif(_rng);
+            ExplicitScalarFunction_1D dRl([&](double t)->BEM::Complex {
+                if (t < 0.25) {
+                    return 1.;
+                }
+                if (t < 0.5) {
+                    return a;
+                }
+                if (t < 0.75) {
+                    return b;
+                }
+                return c;
+            });
+            RiemannLiouvilleMesh rlm(spaceSpace, RiemannLiouvilleMesh::Side::LEFT, orderSpace, dRl, q);
+            L2Mesh l2s(spaceSpace, spaceSpace, d);
+
+            rlm.assembleMassMatrix();
+            l2s.assembleMassMatrix();
+            std::unique_ptr<BEM::Matrix> _massMatrix(nullptr);
+            _massMatrix.reset(new BEM::Matrix(spaceSpace.getSize()*spaceTrialTime.getSize(),spaceSpace.getSize()*spaceTrialTime.getSize()));
+            std::unique_ptr<BEM::ColVector> _rhs(nullptr);
+            _rhs.reset(new BEM::ColVector(spaceSpace.getSize()*spaceTrialTime.getSize()));
+            for (int i = 0; i < spaceSpace.getSize(); ++i){
+                for (int j = 0; j < spaceTestTime.getSize(); ++j){
+                    for (int k = 0; k < spaceSpace.getSize(); ++k){
+                        for (int l = 0; l < spaceTestTime.getSize(); ++l){
+                            _massMatrix->operator()(i + j*spaceSpace.getSize(), k + l*spaceSpace.getSize()) =
+                                l2s.getMatrix()(i, k)*frac.getMatrix()(j, l) + rlm.getMatrix()(i, k)*l2.getMatrix()(j, l);
+                        }
+                    }
+                }            
+            }
+            ExplicitScalarFunction_2D fTime([](double t, double s)->BEM::Complex {
+                return std::sin(M_PI*(t)/0.1)+1.;
+            });
+            auto vecTime = spaceTestTime.testAgainstBasis(fTime);
+        
+            ExplicitScalarFunction_2D fSpace([](double t, double s)->BEM::Complex {return t*(1-t);});
+            auto vecSpace = spaceSpace.testAgainstBasis(fSpace);
+        
+            for (int i = 0; i < spaceSpace.getSize(); ++i){
+                for (int j = 0; j < spaceTestTime.getSize(); ++j){
+                    _rhs->operator()(i+j*spaceSpace.getSize())=vecTime[j]*vecSpace[i];
+                }
+            }
+
+            BEM::ColVector fullSol = _massMatrix->colPivHouseholderQr().solve(*_rhs);
+            auto vecSol = BEM::toVector(fullSol);
+
+            for (int j = 0 ; j < spaceTrialTime.getSize(); ++j) {
+                std::vector<BEM::Complex> vec(vecSol.begin()+j*spaceSpace.getSize(), vecSol.begin()+(j+1)*spaceSpace.getSize());
+                for (int k = 0; k < spaceSpace.getSize(); ++k) {
+                    svdMat->operator()(k,colcounter) = vec[k];
+                }
+                auto solFun = spaceSpace.generateFunction(vec);
+                BEM::plotFunction("testSol"+std::to_string(orderTime)+"_"+std::to_string(j), *solFun, meshSpace);
+                colcounter +=1;
+            }
+            std::cout << "done with k = " << rand << std::endl;
+        }
+        Eigen::BDCSVD<BEM::Matrix, Eigen::ComputeThinU> SVD(*svdMat);
+        auto _singVals = SVD.singularValues();
+        std::cout << _singVals << std::endl;
     }
     
     BOOST_AUTO_TEST_SUITE_END()
