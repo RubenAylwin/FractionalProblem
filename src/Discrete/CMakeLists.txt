@@ -1,0 +1,31 @@
+add_library(Discrete
+    Mesh.cc
+    Mesh.h
+    RegularP0.cc
+    RegularP0.h
+    RegularP0Mesh.cc
+    RegularP0Mesh.h
+    RegularP1Mesh.cc
+    RegularP1Mesh.h
+    DiscreteFunctional.h
+    DiscreteSpace.cc
+    DiscreteSpace.h
+    DiscreteSpaceMatrixMgr.cc
+    DiscreteSpaceMatrixMgr.h
+    DiscreteSpaceMesh.cc
+    DiscreteSpaceMesh.h
+    Element.h
+)
+
+target_include_directories(Discrete
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(Discrete
+    PUBLIC
+        msg_lib
+        Eigen3::Eigen
+        Geometry
+        Integration
+)

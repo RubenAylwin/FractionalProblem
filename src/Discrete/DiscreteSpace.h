@@ -13,7 +13,8 @@
 #include <unordered_map>
 #include <mutex>
 #include <cassert>
-
+#include <OneDimensionalIntegration.h>
+#include <TwoDimensionalIntegration.h>
 
 ///////////////////////////////////////////////////////////////////////
 // Classes for discrete spaces and functions.                        //
@@ -25,8 +26,8 @@
 
 // Forward declarations
 class DiscreteSpace_1D;
-class Integrator_1D;
-class Integrator_2D;
+// class Integrator_1D;
+// class Integrator_2D;
 
 /**
  * @brief: Base class for discrete functions of one variable.

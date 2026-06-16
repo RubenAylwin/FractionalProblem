@@ -1,8 +1,8 @@
 #ifndef SOLVE_RL_PROBLEM_H
 #define SOLVE_RL_PROBLEM_H
 
-#include <string>
 #include <MyTypes.h>
+#include <string>
 
 void solveRLProblem(int order,
                     const std::string &typeD,

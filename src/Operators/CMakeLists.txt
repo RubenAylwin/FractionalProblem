@@ -1,0 +1,39 @@
+add_library(Operators
+    DifferentialOperator.cc
+    FractionalDerivative.cc
+    FractionalParabolic.cc
+    Identity.cc
+    IntegralOperator.cc
+    L2Operator.cc
+    MultiLevelIntegralOperator.cc
+    Operator.cc
+    RiemannLiouville.cc
+    SobolevSlobodeckii.cc
+    WeaklySingular.cc
+    DifferentialOperator.h
+    FractionalDerivative.h
+    FractionalParabolic.h
+    Identity.h
+    IntegralOperator.h
+    L2Operator.h
+    MultiLevelIntegralOperator.h
+    Operator.h
+    RiemannLiouville.h
+    SobolevSlobodeckii.h
+    WeaklySingular.h
+)
+
+target_include_directories(Operators
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(Operators
+    PRIVATE
+    PUBLIC
+        TBB::tbb
+        msg_lib
+        Integration
+        GreenFunc
+        utils_lib
+)

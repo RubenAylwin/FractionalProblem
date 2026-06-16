@@ -44,8 +44,5 @@ test/build
 # debug information files
 *.dwo
 
-# Text
-*.txt
-
 # Old
 *.*~

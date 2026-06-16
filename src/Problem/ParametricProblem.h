@@ -5,6 +5,7 @@
 #include <vector>
 #include <MyTypes.h>
 #include <chrono>
+#include <GreenQP.h>
 class GreenHQP2D;
 class QPProblem;
 class DiscreteSpaceOnCurve_1D;

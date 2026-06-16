@@ -1,0 +1,30 @@
+add_library(Problem
+    PECGrating.cc
+    PECGrating.h
+    PECGratingReduced.cc
+    PECGratingReduced.h
+    PECGratingReducedML.cc
+    PECGratingReducedML.h
+    ParametricProblem.cc
+    ParametricProblem.h
+    RiemannLiouvilleProblem.cc
+    RiemannLiouvilleProblem.h
+)
+
+target_include_directories(Problem
+    PUBLIC
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
+
+target_link_libraries(Problem
+    PRIVATE
+    PUBLIC
+        msg_lib
+        Operators
+        GreenFunc
+        EmpiricalInterpolation
+        QMC
+        progressbar
+        Integration
+        utils_lib
+)
