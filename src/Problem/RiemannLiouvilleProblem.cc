@@ -81,25 +81,29 @@ void GreedyHelper::loadBasis(BEM::ColVector newBasis)
 /**
  * @brief: Given a point, return the reduced matrix for the parameters.
  */
-BEM::Matrix GreedyHelper::reducedMatrixAtPoint(std::vector<double> point)
+BEM::Matrix GreedyHelper::reducedMatrixAtPoint(const std::vector<double> &point)
 {
     msg(5) << "start GreedyHelper::reducedMatrixAtPoint" << endMsg;
-    return BEM::linearCombination<BEM::Matrix>(_reducedMatrices, std::vector<double>{point.begin(), point.begin() + _reducedMatrices.size()});
+    auto result = BEM::linearCombination<BEM::Matrix>(_reducedMatrices, std::vector<double>{point.begin(), point.begin() + _reducedMatrices.size()});
     msg(5) << "end GreedyHelper::reducedMatrixAtPoint" << endMsg;
+    return result;
 }
 
 /**
  * @brief: Given a point, return the reduced RHS for the parameters.
  */
-BEM::ColVector GreedyHelper::reducedRhsAtPoint(std::vector<double> point)
+BEM::ColVector GreedyHelper::reducedRhsAtPoint(const std::vector<double> &point)
 {
-    return BEM::linearCombination<BEM::ColVector>(_reducedRhs, std::vector<double>{point.begin() + _reducedMatrices.size(), point.end()});
+    msg(5) << "start GreedyHelper::reducedRhsAtPoint" << endMsg;
+    auto result = BEM::linearCombination<BEM::ColVector>(_reducedRhs, std::vector<double>{point.begin() + _reducedMatrices.size(), point.end()});
+    msg(5) << "end GreedyHelper::reducedRhsAtPoint" << endMsg;
+    return result;
 }
 
 /**
  * @brief: Solve the problem at a point. Returns the solution expressed in the high fidelity basis.
  */
-BEM::ColVector GreedyHelper::solveAtPoint(std::vector<double> point)
+BEM::ColVector GreedyHelper::solveAtPoint(const std::vector<double> &point)
 {
     msg(5) << "start GreedyHelper::solveAtPoint" << endMsg;
     if (_reducedMatrices.size() == 0) {
@@ -114,7 +118,7 @@ BEM::ColVector GreedyHelper::solveAtPoint(std::vector<double> point)
 /**
  * @brief: Solve the problem at a point. Returns expression in the reduced basis.
  */
-BEM::ColVector GreedyHelper::solveAtPointReduced(std::vector<double> point)
+BEM::ColVector GreedyHelper::solveAtPointReduced(const std::vector<double> &point)
 {
     msg(5) << "start GreedyHelper::solveAtPointReduced" << endMsg;
     BEM::Matrix redMat = reducedMatrixAtPoint(point);
@@ -130,7 +134,7 @@ BEM::ColVector GreedyHelper::solveAtPointReduced(std::vector<double> point)
 /**
  * @brief: ecomputes the (estimated) error at a point.
  */
-double GreedyHelper::errorAtPoint(std::vector<double> point)
+double GreedyHelper::errorAtPoint(const std::vector<double> &point)
 {
     // Different error components.
     BEM::Complex errorMatMat = 0.0;
@@ -192,13 +196,24 @@ RiemannLiouvilleProblem::~RiemannLiouvilleProblem()
  */
 void RiemannLiouvilleProblem::buildDiscrete(void)
 {
-    msg(5) << "RiemannLiouvilleQ::buildDiscrete Start" << endMsg;
+    msg(5) << "RiemannLiouvilleProblem::buildDiscrete Start" << endMsg;
     assert(_RL);
     _RL->assembleMassMatrix();
-    msg(5) << "RiemannLiouvilleQ::buildDiscrete done with RL" << endMsg;
+    msg(5) << "RiemannLiouvilleProblem::buildDiscrete done with RL" << endMsg;
     _matrix.reset(new BEM::Matrix(_RL->getMatrix()));
     _rhs.reset(new BEM::ColVector(_space.testAgainstBasis(*_rhsFun)));
-    msg(5) << "RiemannLiouvilleQ::buildDiscrete End" << endMsg;
+    msg(5) << "RiemannLiouvilleProblem::buildDiscrete End" << endMsg;
+}
+
+/**
+ * @brief: Helper function for mesh construction
+ */
+static double getMeshParameter(int order)
+{
+    if(order < 50. or order > 100.) {
+        throw std::invalid_argument("Order should be given as an integer between 50 and 100, representing the fractional order divided by 100.");
+    }
+    return 1./(2.*order/100.-1.);
 }
 
 /**
@@ -208,7 +223,7 @@ RiemannLiouvilleMeshFactory::RiemannLiouvilleMeshFactory(unsigned numberOfElemen
     _numberOfElements(numberOfElements),
     _order(order),
     _curve(1.),
-    _mesh(_numberOfElements, _curve, 1./(2.*order/100.-1.)),
+    _mesh(_numberOfElements, _curve, getMeshParameter(order)),
     _dimensionQ{qVector.size()},
     _dimensionD{dVector.size()},
     _dimensionF{fVector.size()},
@@ -280,8 +295,9 @@ std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::In
     //Points
     std::vector<std::vector<double>> quadPoints;
     std::vector<double> errors_return;
-    // std::vector<double> firstPoint{};
+
     {
+        msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy  Generating points" << endMsg;
         std::vector<std::vector<double>> toTensPoints(_dimensionQ + _dimensionD + _dimensionF, std::vector<double>());
         GaussLegendre_1D integ(points);
         for (size_t i = 0; i < _dimensionQ + _dimensionD + _dimensionF; ++i) {
@@ -293,9 +309,11 @@ std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::In
             } else {
                 toTensPoints[i] = integ.points(limits[i].first, limits[i].second);
             }
-            // firstPoint.push_back(i < _dimensionQ ? 0.0 : 1.0);
+
         }
+        msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy  begin tensorization" << endMsg;
         quadPoints = BEM::tensorize(toTensPoints);
+        msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy  done with tensorization" << endMsg;
     }
     
     // HiFi Rhs

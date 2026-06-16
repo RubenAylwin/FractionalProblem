@@ -20,6 +20,7 @@
 #include <RiemannLiouvilleProblem.h>
 #include <ParametrizedFunction.h>
 #include <Msg.h>
+#include <SolveRLProblem.h>
 useMessages("MAIN");
 namespace po = boost::program_options;
 
@@ -36,48 +37,6 @@ T readOption(po::variables_map &vm, std::string &&option, T &&defVal) {
     }
     return value;
 }
-
-void solveRLProblem(int order, std::string typeD, std::string typeQ, BEM::CVector dVec, BEM::CVector qVec, BEM::CVector rhsVec, int ms)
-{
-    std::shared_ptr<ScalarFunctionBase_1D> dFun;
-    std::shared_ptr<ScalarFunctionBase_1D> qFun;
-    if (typeD == "poly") {
-        dFun.reset(new PolynomialFunction_1D(dVec));
-    } else if (typeD == "trig") {
-        dFun.reset(new TrigonometricFunction_1D(1, dVec));
-    } else if (typeD == "pw") {
-        dFun.reset(new PwConstantFunction_1D(0, 1, dVec));
-    }
-
-    if (typeQ == "poly") {
-        qFun.reset(new PolynomialFunction_1D(qVec));
-    } else if (typeQ == "trig") {
-        qFun.reset(new TrigonometricFunction_1D(1, qVec));
-    } else if (typeQ == "pw") {
-        qFun.reset(new PwConstantFunction_1D(0, 1, qVec));
-    }
-    PolynomialFunction_1D rhsFun(rhsVec);
-    ExplicitScalarFunction_2D rhs2D([&rhsFun](double t, double s){return rhsFun(t);});
-        
-    TrigonometricCurve curve(1, 0, std::vector<double>{0}, std::vector<double>{0});
-    MeshCurve1D mesh(ms, curve);
-    RegularP1_0Mesh_1D space(mesh);
-    RiemannLiouvilleProblem RLP(order, space, qFun, dFun, rhs2D);
-
-    RLP.buildDiscrete();
-    RLP.solve();
-
-    auto sol = RLP.getSolutionVec();
-    auto solution = space.generateFunction(BEM::toVector(sol));
-    auto &solutionDerL = solution->derivative(order);
-    BEM::plotFunction("SOL", *solution, mesh);
-    BEM::plotFunction("SOLDER", solutionDerL, mesh);
-    BEM::plotFunction("DIF", *dFun);
-    BEM::plotFunction("REC", *qFun);
-    BEM::plotFunction("RHS", rhsFun);
-}
-
-
 
 std::vector<double> evaluateRBforRL(int order, std::string typeD, std::string typeQ, BEM::CVector dVec, BEM::CVector qVec, BEM::CVector dVarVec, BEM::CVector qVarVec, BEM::CVector rhsVec, int points, int ms)
 {
@@ -118,7 +77,7 @@ std::vector<double> evaluateRBforRL(int order, std::string typeD, std::string ty
         BEM::plotFunction("D"+std::to_string(i), dFunVec.back());
     }
     PolynomialFunction_1D rhsFun(rhsVec);
-    ExplicitScalarFunction_2D rhs2D([&rhsFun](double t, double s){return rhsFun(t);});
+    ExplicitScalarFunction_2D rhs2D([&rhsFun](double t, double s [[maybe_unused]]){return rhsFun(t);});
     limits.push_back(BEM::Interval1D(1., 1.));
     auto qSize = qVec.size();
     auto dSize = dVec.size();

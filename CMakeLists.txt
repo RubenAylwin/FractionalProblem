@@ -1,14 +1,23 @@
 cmake_minimum_required(VERSION 3.20)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-set(CMAKE_CXX_FLAGS "-Wall -Wextra  -Xpreprocessor -O3 -pedantic")
+project(VP VERSION 1.1)
 
-project(hallo VERSION 1.0)
 file(GLOB_RECURSE SRC_FILES src/*.cc)
+add_library(VP_LIB ${SRC_FILES})
 
 find_package(Boost 1.84 COMPONENTS program_options REQUIRED)
 find_package(TBB REQUIRED)
-add_executable(VP VP.cc ${SRC_FILES})
-target_include_directories(VP PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes ~/eigen)
-target_link_libraries(VP Boost::program_options TBB::tbb)
+find_package(Eigen3 REQUIRED)
+find_package(Qt5 REQUIRED COMPONENTS Core Widgets Charts)
+
+target_link_libraries(VP_LIB Boost::program_options TBB::tbb Eigen3::Eigen)
+target_include_directories(VP_LIB PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/includes)
+
+target_compile_features(VP_LIB PRIVATE cxx_std_20)
+target_compile_options(VP_LIB PRIVATE -Wall -Wextra -O3 -pedantic)
+
+add_executable(VP VP.cc)
+add_executable(VPQt VPQt.cc)
+
+target_link_libraries(VP PRIVATE VP_LIB)
+target_link_libraries(VPQt PRIVATE VP_LIB Qt5::Core Qt5::Widgets Qt5::Charts)

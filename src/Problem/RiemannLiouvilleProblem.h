@@ -26,12 +26,12 @@ public:
     GreedyHelper(BEM::Matrix prodMatrix, std::vector<BEM::Matrix> matrixVector, std::vector<BEM::ColVector> rhsVector, const std::function<double (std::vector<double>)> &infSupEst);
     void loadBasis(BEM::ColVector newBasis);
 
-    BEM::ColVector solveAtPoint(std::vector<double> point);
-    BEM::ColVector solveAtPointReduced(std::vector<double> point);
-    double errorAtPoint(std::vector<double> point);
+    BEM::ColVector solveAtPoint(const std::vector<double> &point);
+    BEM::ColVector solveAtPointReduced(const std::vector<double> &point);
+    double errorAtPoint(const std::vector<double> &point);
 private:
-    BEM::Matrix reducedMatrixAtPoint(std::vector<double> point);
-    BEM::ColVector reducedRhsAtPoint(std::vector<double> point);
+    BEM::Matrix reducedMatrixAtPoint(const std::vector<double> &point);
+    BEM::ColVector reducedRhsAtPoint(const std::vector<double> &point);
     BEM::Matrix _pMat;
     Eigen::ColPivHouseholderQR<BEM::Matrix> _qr;
     std::unique_ptr<BEM::Matrix> _basis=nullptr;
