@@ -14,9 +14,9 @@ target_include_directories(Geometry
 
 target_link_libraries(Geometry
     PRIVATE
-    PUBLIC
         msg_lib
         Functions
+    PUBLIC
         utils_lib
 )
 

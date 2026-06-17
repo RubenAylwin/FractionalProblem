@@ -1,1 +1,0 @@
-../src/Operators/DifferentialOperator.h

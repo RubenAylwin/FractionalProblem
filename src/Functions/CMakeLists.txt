@@ -12,7 +12,7 @@ target_include_directories(Functions
 
 target_link_libraries(Functions
     PRIVATE
-    PUBLIC
         msg_lib
+    PUBLIC
         utils_lib
 )

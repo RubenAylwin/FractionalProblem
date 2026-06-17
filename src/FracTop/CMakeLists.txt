@@ -10,9 +10,9 @@ target_include_directories(FracTop
 
 target_link_libraries(FracTop
     PRIVATE
-    PUBLIC
-        msg_lib
         Problem
+        msg_lib
         Operators
+    PUBLIC
         utils_lib       
 )

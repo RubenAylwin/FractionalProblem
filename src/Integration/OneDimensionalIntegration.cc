@@ -4,6 +4,8 @@
 #include <ScalarValuedFunction.h>
 #include <cmath>
 #include <boost/preprocessor/repetition/repeat_from_to.hpp>
+#include <boost/math/quadrature/gauss.hpp>
+#include <boost/math/quadrature/trapezoidal.hpp>
 
 /**
  * @brief: Constructor. Number of points, lower and upper limits over which to construct the points.

@@ -12,9 +12,11 @@ target_include_directories(Integration
 
 target_link_libraries(Integration
     PRIVATE
-    PUBLIC
         msg_lib
-        utils_lib
+        Eigen3::Eigen
+        Functions
+    PUBLIC
         Boost::boost
+        utils_lib
         
 )

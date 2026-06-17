@@ -9,8 +9,6 @@
 #include <vector>
 #pragma push_macro("msg")
 #undef msg
-#include <boost/math/quadrature/gauss.hpp>
-#include <boost/math/quadrature/trapezoidal.hpp>
 #pragma pop_macro("msg")
 
 // Forward declarations

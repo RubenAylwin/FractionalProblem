@@ -14,10 +14,11 @@ target_link_libraries(utils_lib
     PRIVATE
         msg_lib
         EmpiricalInterpolation
-    PUBLIC
-        Eigen3::Eigen
         Boost::boost
         Geometry
+        Integration
+    PUBLIC
+        Eigen3::Eigen
         Discrete
 )
 
@@ -30,6 +31,7 @@ target_include_directories(utils_lib
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}
 )
+
 add_subdirectory(Discrete)
 add_subdirectory(EmpiricalInterpolation)
 add_subdirectory(FracTop)

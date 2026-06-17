@@ -11,8 +11,8 @@ target_include_directories(EmpiricalInterpolation
 
 target_link_libraries(EmpiricalInterpolation
     PRIVATE
-    PUBLIC
         msg_lib
         progressbar
+    PUBLIC
         utils_lib
 )

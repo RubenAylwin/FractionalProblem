@@ -18,8 +18,8 @@ target_include_directories(GreenFunc
 
 target_link_libraries(GreenFunc
     PRIVATE
-    PUBLIC
         msg_lib
         Integration
+    PUBLIC
         utils_lib       
 )

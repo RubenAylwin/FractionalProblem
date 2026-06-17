@@ -18,13 +18,13 @@ target_include_directories(Problem
 
 target_link_libraries(Problem
     PRIVATE
-    PUBLIC
-        msg_lib
         Operators
-        GreenFunc
         EmpiricalInterpolation
+        msg_lib
         QMC
         progressbar
         Integration
+    PUBLIC
+        GreenFunc
         utils_lib
 )

@@ -30,10 +30,10 @@ target_include_directories(Operators
 
 target_link_libraries(Operators
     PRIVATE
-    PUBLIC
-        TBB::tbb
         msg_lib
         Integration
+        TBB::tbb
         GreenFunc
+    PUBLIC
         utils_lib
 )

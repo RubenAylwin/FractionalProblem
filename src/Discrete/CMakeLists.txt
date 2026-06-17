@@ -23,9 +23,11 @@ target_include_directories(Discrete
 )
 
 target_link_libraries(Discrete
-    PUBLIC
+    PRIVATE
         msg_lib
         Eigen3::Eigen
+    PUBLIC
+        Functions
         Geometry
         Integration
 )
