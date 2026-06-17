@@ -19,6 +19,9 @@
 #include <RiemannLiouville.h>
 #include <RiemannLiouvilleProblem.h>
 #include <ParametrizedFunction.h>
+#pragma push_macro("msg")
+#undef msg
+#pragma pop_macro("msg")
 #include <Msg.h>
 #include <SolveRLProblem.h>
 useMessages("MAIN");

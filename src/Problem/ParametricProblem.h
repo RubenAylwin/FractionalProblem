@@ -5,7 +5,7 @@
 #include <vector>
 #include <MyTypes.h>
 #include <chrono>
-#include <GreenQP.h>
+
 class GreenHQP2D;
 class QPProblem;
 class DiscreteSpaceOnCurve_1D;
@@ -88,7 +88,7 @@ protected:
     double _period = 0;
     double _angle = 0;
     double _wavenumber = 0;
-    std::unique_ptr<GreenHQP2D> _green = nullptr;
+    std::unique_ptr<GreenHQP2D> _green;
 };
 
 class QPProblemFactory : public ProblemFactory {

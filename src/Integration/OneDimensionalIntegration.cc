@@ -6,7 +6,8 @@
 #include <boost/preprocessor/repetition/repeat_from_to.hpp>
 #include <boost/math/quadrature/gauss.hpp>
 #include <boost/math/quadrature/trapezoidal.hpp>
-
+#include <Msg.h>
+useMessages("INT1_MSG");
 /**
  * @brief: Constructor. Number of points, lower and upper limits over which to construct the points.
  */
@@ -16,6 +17,9 @@ Integrator_1D::Integrator_1D(unsigned n, double lowerLimitQuad, double upperLimi
     _lowerLimitQuad(lowerLimitQuad),
     _upperLimitQuad(upperLimitQuad)
 {
+    msg(5) << "start Integrator_1D::Constructor" << endMsg;
+    msg(5) << "end Integrator_1D::Constructor" << endMsg;
+
 }
 
 /**
@@ -238,6 +242,8 @@ AdaptiveTrapezoidal_1D::AdaptiveTrapezoidal_1D(double tolerance) :
     Integrator_1D(-1, 1, 1),
     _tolerance(tolerance)
 {
+    msg(5) << "start AdaptiveTrapezoidal_1D::AdaptiveTrapezoidal_1D::Constructor" << endMsg;
+    msg(5) << "end AdaptiveTrapezoidal_1D::AdaptiveTrapezoidal_1D::Constructor" << endMsg;
 }
 
 /**
@@ -246,3 +252,4 @@ AdaptiveTrapezoidal_1D::AdaptiveTrapezoidal_1D(double tolerance) :
 BEM::Complex AdaptiveTrapezoidal_1D::integrate(const double lowerLimit, const double upperLimit, const ScalarFunctionBase_1D &integrand) const {
     return boost::math::quadrature::trapezoidal([&integrand](double t) {return integrand(t);}, lowerLimit, upperLimit, _tolerance, 200);
 }
+

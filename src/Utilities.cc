@@ -9,7 +9,7 @@
 #include <tbb/parallel_for.h>
 #include <tbb/blocked_range2d.h>
 #include <Eigen/Eigenvalues>
-#include <EmpiricalInterpolation.h>
+//#include <EmpiricalInterpolation.h>
 #include <Msg.h>
 #include <DiscreteSpace.h>
 #include <unordered_set>
@@ -315,68 +315,68 @@ int BEM::timeDifference(const BEM::TimePoint &time1, const BEM::TimePoint &time2
     return std::chrono::duration_cast<std::chrono::milliseconds>(time2 - time1).count();
 }
 
-void BEM::getBasesPerLevel(std::vector<EmpiricalInterpolation> &empiricalInterpolators, unsigned bases)
-{
-    msg(5) << "(start)BEM::getBasesPerLevel" << endMsg;
-    msg(6) << "Called with " << bases << " bases" << endMsg;
-    std::vector<unsigned> basesPerLevel(empiricalInterpolators.size(), 0U);
-    for (unsigned b = 0; b < bases; ++b) {
-        int largest = -1;
-        double value = 0;
-        for (unsigned level = 0; level < empiricalInterpolators.size(); ++level) {
-            double largestAtLevel = basesPerLevel[level] < empiricalInterpolators[level].getSingValues().size() ? std::pow(std::abs(empiricalInterpolators[level].getSingValues()[basesPerLevel[level]]), 2) : 0;
-            if (value < largestAtLevel) {
-                value = largestAtLevel;
-                largest = level;
-            }
-        }
-        if (largest >=0) {
-            ++basesPerLevel[largest];
-        }
-    }
-    msg(5) << "(mid)BEM::getBasesPerLevel" << endMsg;    
-    for (unsigned level = 0; level < empiricalInterpolators.size(); ++level) {
-        if (basesPerLevel[level] == 0) {
-            ++basesPerLevel[level];
-        }
-        msg(6) << "(mid)BEM::getBasesPerLevel level " << level << " has " << basesPerLevel[level] << " bases" << endMsg;
-        empiricalInterpolators[level].buildInterpolator(basesPerLevel[level]);
-        msg(6) << "built level " << level << endMsg;
-    }
-    msg(5) << "(end)BEM::getBasesPerLevel" << endMsg;
-}
+// void BEM::getBasesPerLevel(std::vector<EmpiricalInterpolation> &empiricalInterpolators, unsigned bases)
+// {
+//     msg(5) << "(start)BEM::getBasesPerLevel" << endMsg;
+//     msg(6) << "Called with " << bases << " bases" << endMsg;
+//     std::vector<unsigned> basesPerLevel(empiricalInterpolators.size(), 0U);
+//     for (unsigned b = 0; b < bases; ++b) {
+//         int largest = -1;
+//         double value = 0;
+//         for (unsigned level = 0; level < empiricalInterpolators.size(); ++level) {
+//             double largestAtLevel = basesPerLevel[level] < empiricalInterpolators[level].getSingValues().size() ? std::pow(std::abs(empiricalInterpolators[level].getSingValues()[basesPerLevel[level]]), 2) : 0;
+//             if (value < largestAtLevel) {
+//                 value = largestAtLevel;
+//                 largest = level;
+//             }
+//         }
+//         if (largest >=0) {
+//             ++basesPerLevel[largest];
+//         }
+//     }
+//     msg(5) << "(mid)BEM::getBasesPerLevel" << endMsg;    
+//     for (unsigned level = 0; level < empiricalInterpolators.size(); ++level) {
+//         if (basesPerLevel[level] == 0) {
+//             ++basesPerLevel[level];
+//         }
+//         msg(6) << "(mid)BEM::getBasesPerLevel level " << level << " has " << basesPerLevel[level] << " bases" << endMsg;
+//         empiricalInterpolators[level].buildInterpolator(basesPerLevel[level]);
+//         msg(6) << "built level " << level << endMsg;
+//     }
+//     msg(5) << "(end)BEM::getBasesPerLevel" << endMsg;
+// }
 
-void BEM::getBasesPerLevel(std::vector<EmpiricalInterpolation> &empiricalInterpolators, double tolerance)
-{
-    double norm{0.0};
-    for (auto &emp : empiricalInterpolators) {
-        emp.computeSVD();
-        for (const auto &val : emp.getSingValues()) {
-            norm += std::abs(val)*std::abs(val);
-        }
-    }
-    double energy{0};
-    std::vector<unsigned> bases(empiricalInterpolators.size(), 0U);
-    while (energy/norm < 1. - std::pow(tolerance, 2)) {
-        unsigned largest = 0;
-        double value = 0;
-        for (unsigned level = 0; level < empiricalInterpolators.size(); ++level) {
-            double largestAtLevel = bases[level] < empiricalInterpolators[level].getSingValues().size() ? std::pow(std::abs(empiricalInterpolators[level].getSingValues()[bases[level]]), 2) : 0;
-            if (value < largestAtLevel) {
-                value = largestAtLevel;
-                largest = level;
-            }
-        }
-        ++bases[largest];
-        energy += value;
+// void BEM::getBasesPerLevel(std::vector<EmpiricalInterpolation> &empiricalInterpolators, double tolerance)
+// {
+//     double norm{0.0};
+//     for (auto &emp : empiricalInterpolators) {
+//         emp.computeSVD();
+//         for (const auto &val : emp.getSingValues()) {
+//             norm += std::abs(val)*std::abs(val);
+//         }
+//     }
+//     double energy{0};
+//     std::vector<unsigned> bases(empiricalInterpolators.size(), 0U);
+//     while (energy/norm < 1. - std::pow(tolerance, 2)) {
+//         unsigned largest = 0;
+//         double value = 0;
+//         for (unsigned level = 0; level < empiricalInterpolators.size(); ++level) {
+//             double largestAtLevel = bases[level] < empiricalInterpolators[level].getSingValues().size() ? std::pow(std::abs(empiricalInterpolators[level].getSingValues()[bases[level]]), 2) : 0;
+//             if (value < largestAtLevel) {
+//                 value = largestAtLevel;
+//                 largest = level;
+//             }
+//         }
+//         ++bases[largest];
+//         energy += value;
         
-    }
+//     }
 
-    for (unsigned level = 0; level < empiricalInterpolators.size(); ++level) {
-        empiricalInterpolators[level].buildInterpolator(bases[level]);
-    }
+//     for (unsigned level = 0; level < empiricalInterpolators.size(); ++level) {
+//         empiricalInterpolators[level].buildInterpolator(bases[level]);
+//     }
 
-}
+// }
 /**
  * @brief: Given a partition, find the partition index it lies in. If it lies on a partition node, the given direction
  * indicates in which interval to place the point (LEFT->limit at point from the left).

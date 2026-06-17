@@ -1,16 +1,28 @@
-cmake_minimum_required(VERSION 3.20)
-set(CMAKE_CXX_STANDARD 20)
-set(CMAKE_CXX_STANDARD_REQUIRED ON)
+add_executable(test_fractional
+    test.cc
+)
 
-set(CMAKE_CXX_FLAGS "-O3")
+target_include_directories(test_fractional
+    PRIVATE
+        ${CMAKE_CURRENT_SOURCE_DIR}
+)
 
-project(hallo VERSION 1.0)
-file(GLOB_RECURSE SRC_FILES ../src/*.cc)
+target_link_libraries(test_fractional
+    PRIVATE
+        msg_lib
+        utils_lib
+        Discrete
+        EmpiricalInterpolation
+        FracTop
+        Functions
+        Geometry
+        GreenFunc
+        Integration
+        Operators
+        Problem
+        QMC
+        progressbar
+)
 
-find_package(Boost 1.84 COMPONENTS program_options unit_test_framework REQUIRED)
-find_package(TBB REQUIRED)
-find_package(Eigen3 REQUIRED)
-add_executable(test test.cc ${SRC_FILES})
-target_include_directories(test PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../includes)
-target_link_libraries(test PRIVATE Boost::program_options TBB::tbb Eigen3::Eigen)
-target_compile_options(test PUBLIC -Wall -Xpreprocessor -pedantic)
+
+add_test(NAME Tests COMMAND test_fractional)

@@ -1,5 +1,6 @@
 #include <ParametrizedFunction.h>
 #include <Msg.h>
+#include <cassert>
 useMessages("PAR_FUN");
 
 /**

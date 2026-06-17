@@ -16,15 +16,19 @@ add_executable(VP VP.cc)
 target_link_libraries(VP
     PRIVATE
         Discrete
-        EmpiricalInterpolation
         FracTop
         Functions
-        Geometry
-        GreenFunc
-        Integration
         Operators
         Problem
-        QMC
         progressbar
         Boost::program_options
+        utils_lib
+        msg_lib
 )
+
+option(TESTING "Building tests" ON)
+
+if (TESTING)
+   enable_testing()
+   add_subdirectory(test)
+endif()

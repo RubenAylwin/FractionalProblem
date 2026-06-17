@@ -1,4 +1,4 @@
-add_library(msg_lib
+add_library(msg_lib OBJECT
     Msg.cc
     Msg.h
 )
@@ -13,7 +13,6 @@ add_library(utils_lib
 target_link_libraries(utils_lib
     PRIVATE
         msg_lib
-        EmpiricalInterpolation
         Boost::boost
         Geometry
         Integration

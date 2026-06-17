@@ -17,7 +17,7 @@
 
 class ScalarFunctionBase_1D;
 class Curve2D;
-class EmpiricalInterpolation;
+//class EmpiricalInterpolation;
 
 namespace BEM {
     
@@ -48,8 +48,8 @@ namespace BEM {
     double distance(const Interval1D &sup1, const Interval1D &sup2);
     BEM::TimePoint now(void);
     int timeDifference(const BEM::TimePoint &time1, const BEM::TimePoint &time2);
-    void getBasesPerLevel(std::vector<EmpiricalInterpolation> &empiricalInterpolators, unsigned bases);
-    void getBasesPerLevel(std::vector<EmpiricalInterpolation> &empiricalInterpolators, double tolerance);
+    // void getBasesPerLevel(std::vector<EmpiricalInterpolation> &empiricalInterpolators, unsigned bases);
+    // void getBasesPerLevel(std::vector<EmpiricalInterpolation> &empiricalInterpolators, double tolerance);
     unsigned findIndex(const std::vector<double> &partition, double point, BasisFunction_1D::Direction direction);
     std::vector<BEM::Complex> basisVector(int i, int size);
     double L2Norm(const ScalarFunctionBase_1D &function);

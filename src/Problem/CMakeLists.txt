@@ -24,7 +24,7 @@ target_link_libraries(Problem
         QMC
         progressbar
         Integration
-    PUBLIC
         GreenFunc
+    PUBLIC
         utils_lib
 )

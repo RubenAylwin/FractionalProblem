@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include <chrono>
+#include <cassert>
 #include <initializer_list>
 #include <list>
 #include <iostream>

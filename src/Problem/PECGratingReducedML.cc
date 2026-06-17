@@ -205,25 +205,25 @@ void UQProblemFactoryReducedML::sampleMC(const std::vector<unsigned> &samples)
 void UQProblemFactoryReducedML::trainEmpirical(const std::vector<unsigned> &samples, unsigned bases)
 {
     msg(5) << "(start)UQProblemFactoryReducedML::trainEmpirical"<< endMsg;
-    initializeSVD();
-    assert(samples.size() == _numElementsVector.size() - 1);
-    sampleMC(samples);
-    unsigned totalDim = 0;
-    for (const auto val : _numElementsVector) {
-        totalDim+=val;
-    }
+    // initializeSVD();
+    // assert(samples.size() == _numElementsVector.size() - 1);
+    // sampleMC(samples);
+    // unsigned totalDim = 0;
+    // for (const auto val : _numElementsVector) {
+    //     totalDim+=val;
+    // }
         
-    BEM::getBasesPerLevel(*_empiricalGreen, bases);
-    if (bases > totalDim) {
-        bases = totalDim;
-    }
+    // BEM::getBasesPerLevel(*_empiricalGreen, bases);
+    // if (bases > totalDim) {
+    //     bases = totalDim;
+    // }
 
-    BEM::getBasesPerLevel(*_empiricalRhs, bases);
-    BEM::getBasesPerLevel(*_empiricalSolution, bases);
-    _bemPodMatrix.reset(new BEM::Matrix(_numElementsVector.back(), bases));
-    _bemPodMatrix->setZero();
+    // BEM::getBasesPerLevel(*_empiricalRhs, bases);
+    // BEM::getBasesPerLevel(*_empiricalSolution, bases);
+    // _bemPodMatrix.reset(new BEM::Matrix(_numElementsVector.back(), bases));
+    // _bemPodMatrix->setZero();
 
-    saveEIData();
+    // saveEIData();
     msg(5) << "(end)UQProblemFactoryReducedML::trainEmpirical"<< endMsg;
 }
 

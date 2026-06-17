@@ -5,6 +5,9 @@
 #define BOOST_TEST_DYN_LINK
 #define BOOST_TEST_MODULE test suite
 #include <boost/test/included/unit_test.hpp>
+#pragma push_macro("msg")
+#undef msg
+#pragma pop_macro("msg")
 #include <Msg.h>
 useMessages("TEST_DEBUG");
 #include "geomTest.h"

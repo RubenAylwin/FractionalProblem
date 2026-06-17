@@ -3,13 +3,16 @@
 /*
  *TESTS FOR DISCRETE SPACES
  */
+
+#pragma push_macro("msg")
+#include <boost/test/execution_monitor.hpp>
+#undef msg
 #include <PECGrating.h>
 #include <DiscreteSpace.h>
 #include <Utilities.h>
 #include <Curve.h>
 #include <vector>
 #include <complex>
-#include <boost/test/execution_monitor.hpp>
 #include <cmath>
 #include <stdexcept>
 #include <Utilities.h>
@@ -19,6 +22,7 @@
 #include <RegularP0.h>
 #include <Mesh.h>
 #include <RegularP0Mesh.h>
+#pragma pop_macro("msg")
 namespace discreteTests{
 
     static double tolerance = 1E-9;
