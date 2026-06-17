@@ -8,6 +8,7 @@ set(CMAKE_CXX_STANDARD 20)
 
 find_package(Boost 1.84 COMPONENTS program_options REQUIRED)
 find_package(TBB REQUIRED)
+find_package(OpenMP REQUIRED)
 find_package(Eigen3 REQUIRED)
 
 add_subdirectory(src)
