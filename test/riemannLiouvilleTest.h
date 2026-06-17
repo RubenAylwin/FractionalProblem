@@ -56,7 +56,7 @@ namespace riemannLiouvilleTests {
         ExplicitScalarFunction_1D d([](double t)->BEM::Complex {return 1.0;});
         ExplicitScalarFunction_1D q([](double t)->BEM::Complex {return t;});
         
-        unsigned size = std::pow(2, 3);
+        unsigned size = std::pow(2, 10);
         int order = 85;
         MeshCurve1D mesh(size, curve);
         RegularP1_0Mesh_1D space(mesh);

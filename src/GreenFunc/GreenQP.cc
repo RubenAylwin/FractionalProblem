@@ -170,7 +170,8 @@ BEM::Complex GreenHQP2D::spectralSum(const Point2D &X, const Point2D &Y) const
         double Bn = K*std::sin(_angle) + n*2.0*M_PI/(_period);
         BEM::Complex Gn = (K*K >= Bn*Bn) ? std::sqrt(K*K - Bn*Bn) : BEM::I*std::sqrt(Bn*Bn - K*K);
         BEM::Complex xExp = std::exp(BEM::I*Bn*(r.getX()));
-        BEM::Complex yExp = std::exp(BEM::I*Gn*std::abs<double>(r.getY()));
+        double rAux = std::abs(r.getY());
+        BEM::Complex yExp = std::exp(BEM::I*Gn*rAux);
         sum += xExp*yExp/Gn;
     }
     return -(BEM::I/(2.*_period))*sum;
