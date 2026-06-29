@@ -87,7 +87,6 @@ std::vector<double> evaluateRBforRL(int order, std::string typeD, std::string ty
     auto est = [order, qSize, dSize](std::vector<double> point) -> double {
         double min = *std::min_element(point.begin() + qSize, point.begin() + dSize + qSize);
         double max = *std::max_element(point.begin() + qSize, point.begin() + dSize + qSize);
-        return 0.5*(point[0]+2)*std::abs(std::cos(M_PI*order/100.)) - 0.5*point[0];
         return 0.5*((max + min)*std::abs(std::cos(M_PI*order/100.)) - (max - min));
     };
     RiemannLiouvilleMeshFactory factory(ms, order, qFunVec, dFunVec, VectorFun_2D{rhs2D});
