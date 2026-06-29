@@ -26,6 +26,7 @@ namespace BEM {;
     using ColVector = Eigen::Matrix<Complex, Eigen::Dynamic, 1>;
     using OneDimFunction = std::function<BEM::Complex (double t)>;
     using TwoDimFunction = std::function<BEM::Complex (double t, double s)>;
+    using TwoDimFunctionTime = std::function<BEM::Complex (double t, double x, double y)>;
     using Transformation = std::function<Point2D (Point2D P)>;
     using UVector = std::vector<unsigned>;
     using DVector = std::vector<double>;

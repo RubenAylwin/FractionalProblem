@@ -206,6 +206,40 @@ void RiemannLiouvilleProblem::buildDiscrete(void)
 }
 
 /**
+ * @brief: Problem constructor.
+ * @desc: order is to be given as a number between 50 and 100. The real fractional order is order/100.
+ * This is necessary because fractional derivatives are saved in an int-indexed dictionary with the same format.
+ */
+RiemannLiouvilleProblemTimeStep::RiemannLiouvilleProblemTimeStep(int order, DiscreteSpaceMesh &space, double stepSize, double timeHorizon) :
+    ProblemMeshTimeStep(stepSize, timeHorizon),
+    _order{order},
+    _space{space},
+    _mesh{space.getMesh()}
+{
+}
+
+/**
+ * @brief: Explicit destructor.
+ */
+RiemannLiouvilleProblemTimeStep::~RiemannLiouvilleProblemTimeStep()
+{
+}
+
+/**
+ * @brief: Build the discrete problem.
+ */
+void RiemannLiouvilleProblemTimeStep::buildDiscreteMatrix(void)
+{
+    msg(5) << "RiemannLiouvilleProblem::buildDiscrete Start" << endMsg;
+    assert(_RL);
+    _RL->assembleMassMatrix();
+    msg(5) << "RiemannLiouvilleProblem::buildDiscrete done with RL" << endMsg;
+    _matrix.reset(new BEM::Matrix(_RL->getMatrix()));
+    // _rhs.reset(new BEM::ColVector(_space.testAgainstBasis(*_rhsFun)));
+    msg(5) << "RiemannLiouvilleProblem::buildDiscrete End" << endMsg;
+}
+
+/**
  * @brief: Helper function for mesh construction
  */
 static double getMeshParameter(int order)

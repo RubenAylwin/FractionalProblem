@@ -62,6 +62,7 @@ using VectorFun_1D = std::vector<ExplicitScalarFunction_1D>;
 using VectorFun_2D = std::vector<ExplicitScalarFunction_2D>;
 class ScalarFunctionBase_1D;
 class ScalarFunctionBase_2D;
+class ScalarFunctionBase_2D_Time;
 
 /**
  * @brief: Class for Riemman liouville problem.
@@ -122,6 +123,36 @@ private:
     std::unique_ptr<GreedyHelper> _greedy = nullptr;
     std::unique_ptr<LeftFracDerivative> _LF;
     std::unique_ptr<DiscreteSpaceMesh> _space = nullptr;
+};
+
+class RiemannLiouvilleProblemTimeStep : public ProblemMeshTimeStep
+{
+public:
+    RiemannLiouvilleProblemTimeStep(int order, DiscreteSpaceMesh &space, double stepSize, double timeHorizon);
+    template <typename T, typename S, typename R>
+    RiemannLiouvilleProblemTimeStep(int order, DiscreteSpaceMesh &space, double stepSize, double timeHorizon, T qFun, S dFun, R fFun) :
+        RiemannLiouvilleProblemTimeStep(order, space, stepSize, timeHorizon)
+    {
+        _rhsFun.reset(new R(fFun));
+        _RL.reset(new RiemannLiouvilleMesh(_space, RiemannLiouvilleMesh::Side::LEFT, _order, dFun, qFun));
+    }
+
+    RiemannLiouvilleProblemTimeStep(int order, DiscreteSpaceMesh &space, double stepSize, double timeHorizon, std::shared_ptr<ScalarFunctionBase_1D> &qFun, std::shared_ptr<ScalarFunctionBase_1D> &dFun, std::shared_ptr<ScalarFunctionBase_2D_Time> &fFun) :
+        RiemannLiouvilleProblemTimeStep(order, space, stepSize)
+    {
+        _rhsFun = fFun;
+        _RL.reset(new RiemannLiouvilleMesh(_space, RiemannLiouvilleMesh::Side::LEFT, _order, dFun, qFun));
+    }
+
+    ~RiemannLiouvilleProblemTimeStep(void);
+    void buildDiscreteMatrix(void) override;
+    const DiscreteSpaceMesh &getSpace(void) override {return _space;}
+private:
+    int _order;
+    const DiscreteSpaceMesh &_space;
+    const Mesh1D &_mesh;
+    std::shared_ptr<ScalarFunctionBase_2D_Time> _rhsFun = nullptr;
+    std::unique_ptr<Operator> _RL = nullptr;
 };
 
 #endif 

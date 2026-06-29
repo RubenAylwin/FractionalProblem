@@ -87,6 +87,24 @@ int ProblemMesh::solve(void)
 }
 
 /**
+ * @brief: Solve the discrete problem.
+ */
+int ProblemMeshTimeStep::solve(void)
+{
+    auto first = BEM::now();
+    double tN = 0.0;
+    _solutions.clear();
+    auto colPiv = _matrix->colPivHouseholderQr();
+    for (size_t i = 1; tN < _timeHorizon; ++i, tN=i*_stepSize) {
+        auto rhs = getRHS(i)+getSolutionVec(i)/_stepSize;
+        _solution.emplace_back(new BEM::ColVector(colPiv.solve()))
+    }
+    _solution.reset(new BEM::ColVector(_matrix->colPivHouseholderQr().solve(*_rhs)));
+    auto second = BEM::now();
+    return std::chrono::duration_cast<std::chrono::milliseconds>(second - first).count();
+}
+
+/**
  * @brief: Constructor.
  */
 QPProblem::QPProblem(double period, double angle, double wavenumber) :

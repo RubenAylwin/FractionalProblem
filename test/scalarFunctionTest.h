@@ -39,8 +39,40 @@ namespace FunctionTests{
 
     BOOST_AUTO_TEST_SUITE_END()
 
-    BOOST_AUTO_TEST_SUITE(BoundaryScalarTraceTest)
+    BOOST_AUTO_TEST_SUITE(ExplicitScalar2DTimeTest)
+    
+    BOOST_AUTO_TEST_CASE(ConstructorTest)
+    {
+        msg(1) << "start Scalar::ExplicitScalar2DTime::ConstructorTest" << endMsg;
+        ExplicitScalarFunction_2D_Time function([](double t, double x, double y) {return std::complex<double>(2*t, 0)*(x+2.*y);});
+        msg(1) << "end Scalar::ExplicitScalar2DTime::ConstructorTest" << endMsg;
+    }
 
+    BOOST_AUTO_TEST_CASE(EvaulationTest)
+    {
+        msg(1) << "start Scalar::ExplicitScalar::EvaluationTest" << endMsg;
+        ExplicitScalarFunction_2D_Time function([](double t, double x, double y) {return std::complex<double>(2*t, 0)*(x+2.*y);});
+        BOOST_CHECK_CLOSE(function(1, 2., 1.).real(), 8, tolerance);
+        BOOST_CHECK_CLOSE(function(3.14, 3., 0.).real(), 18.84, tolerance);
+        BOOST_CHECK_CLOSE(function(-3.14, -1., 0.).real(), 6.28, tolerance);
+        msg(1) << "end Scalar::ExplicitScalar::EvaluationTest" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_CASE(FunctionAtEvaulationTest)
+    {
+        msg(1) << "start Scalar::ExplicitScalar::FunctionAtEvaluationTest" << endMsg;
+        ExplicitScalarFunction_2D_Time function([](double t, double x, double y) {return std::complex<double>(2*t, 0)*(x+2.*y);});
+        auto functionAt2Ptr = function.functionAt(2);        
+        auto &functionAt2 = *functionAt2Ptr;
+        BOOST_CHECK_CLOSE(function(2, 2., 1.).real(),  functionAt2(2., 1.).real(), tolerance);
+        BOOST_CHECK_CLOSE(function(2, 3., -1.).real(), functionAt2(3., -1.).real(), tolerance);
+        BOOST_CHECK_CLOSE(function(2, -1., 0.).real(), functionAt2(-1., 0.).real(), tolerance);
+        msg(1) << "end Scalar::ExplicitScalar::FunctionAtEvaluationTest" << endMsg;
+    }
+
+    BOOST_AUTO_TEST_SUITE_END()    
+    
+    BOOST_AUTO_TEST_SUITE(BoundaryScalarTraceTest)
 
     BOOST_AUTO_TEST_CASE(ConstructorTest)
     {

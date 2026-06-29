@@ -91,9 +91,38 @@ ScalarFunctionBasePtr_2D ScalarFunctionBase_2D::operator*(const ScalarFunctionBa
 }
 
 /**
+ * @brief: Product between 2-D functions.
+ */
+ScalarFunctionBasePtr_2D_Time ScalarFunctionBase_2D_Time::operator*(const ScalarFunctionBase_2D_Time &other) const
+{
+    auto product = [&](const double t, const double x, const double y) { return (*this)(t, x, y)*other(t, x, y); };
+    return ScalarFunctionBasePtr_2D_Time(new ExplicitScalarFunction_2D_Time(std::move(product)));
+}
+
+/**
+ * @brief: Fix time t
+ */
+ScalarFunctionBasePtr_2D ScalarFunctionBase_2D_Time::functionAt(const double t) const
+{
+    auto fixTime = [&, t](const double x, const double y) {
+        return (*this)(t, x, y);
+    };
+    return ScalarFunctionBasePtr_2D(new ExplicitScalarFunction_2D(std::move(fixTime)));
+}
+
+
+/**
  * @brief: Evaluation.
  */
 BEM::Complex ExplicitScalarFunction_2D::operator()(const double t, const double s) const
 {
     return _function(t, s);
+}
+
+/**
+ * @brief: Evaluation.
+ */
+BEM::Complex ExplicitScalarFunction_2D_Time::operator()(const double t, const double x, const double y) const
+{
+    return _function(t, x, y);
 }

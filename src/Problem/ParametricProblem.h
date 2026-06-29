@@ -52,6 +52,25 @@ protected:
     std::unique_ptr<BEM::ColVector> _rhs = nullptr;
 };
 
+class ProblemMeshTimeStep {
+public:
+    ProblemMeshTimeStep(double stepSize, double timeHorizon) : _stepSize{stepSize}, _timeHorizon{timeHorizon}
+    {};
+    virtual ~ProblemMeshTimeStep(void) = default;
+    virtual void buildDiscreteMatrix(void) = 0;
+    virtual const DiscreteSpaceMesh &getSpace(void) = 0;
+    virtual const BEM::ColVector &getSolutionVec(size_t index) { return *_solutions[index]; };
+    virtual const BEM::ColVector &getRHS(size_t index) { return *_rhs[index]; };
+    virtual const BEM::Matrix &getMatrix(void) const { return *_matrix; };
+    virtual int solve(void);
+protected:
+    std::unique_ptr<BEM::Matrix> _matrix = nullptr;
+    std::vector<std::unique_ptr<BEM::ColVector>> _solutions;
+    std::vector<std::unique_ptr<BEM::ColVector>> _rhs;
+    double _stepSize = 0.0;
+    double _timeHorizon = 0.0;
+};
+
 
 class ProblemFactory {
 public:

@@ -12,12 +12,13 @@
 //Forward declarations
 class Curve2D;
 class ScalarFunctionBase_2D;
+class ScalarFunctionBase_2D_Time;
 class ScalarFunctionBase_1D;
 
 //Typedef
 using ScalarFunctionBasePtr_1D = std::unique_ptr<ScalarFunctionBase_1D>;
 using ScalarFunctionBasePtr_2D = std::unique_ptr<ScalarFunctionBase_2D>;
-
+using ScalarFunctionBasePtr_2D_Time = std::unique_ptr<ScalarFunctionBase_2D_Time>;
 
 /**
  * @brief: Base class for a function that can be evaluated on one variable.
@@ -122,5 +123,27 @@ private:
     BEM::Transformation _transformation;
 };
 
+
+/**
+ * @brief: Base class for a function that can be evaluated on two variables and a third time variable
+ */
+class ScalarFunctionBase_2D_Time {
+ public:
+    virtual BEM::Complex operator()(const double t, const double x, const double y) const = 0;
+    virtual ~ScalarFunctionBase_2D_Time() = default;
+    virtual ScalarFunctionBasePtr_2D_Time operator*(const ScalarFunctionBase_2D_Time &other) const;
+    virtual ScalarFunctionBasePtr_2D functionAt(const double t) const;
+};
+
+/**
+ * @brief: Class for a 2-D function that is given by a lambda.
+ */
+class ExplicitScalarFunction_2D_Time : public ScalarFunctionBase_2D_Time {
+public:
+    ExplicitScalarFunction_2D_Time(BEM::TwoDimFunctionTime &&function) : _function(function) {};
+    BEM::Complex operator()(const double t, const double x, const double y) const override;
+private:
+    BEM::TwoDimFunctionTime _function;
+};
 
 #endif
