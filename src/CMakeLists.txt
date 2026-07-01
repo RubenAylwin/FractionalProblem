@@ -7,7 +7,7 @@ add_library(utils_lib
     Utilities.cc
     Utilities.h
     MyTypes.cc
-    Mytypes.h
+    MyTypes.h
 )
 
 target_link_libraries(utils_lib

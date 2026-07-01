@@ -100,7 +100,7 @@ struct A {
     double arr[N];
 };
 
-[[maybe_unused]] constexpr static auto AGR = A<200>();
+[[maybe_unused]] static auto AGR = A<200>();
 
 [[maybe_unused]] static BEM::Complex expansion(int order, double argument)
 {

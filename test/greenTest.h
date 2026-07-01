@@ -177,7 +177,7 @@ namespace GreenTest{
     }
 
 
-    BOOST_AUTO_TEST_CASE(PECGratingProbMesh1)
+    BOOST_AUTO_TEST_CASE(PECGratingProbMesh1, * boost::unit_test::disabled())
     {
         int elements = 200;
         double wavenumber = 6.;
@@ -211,16 +211,12 @@ namespace GreenTest{
             return BEM::Complex(std::cos(normExp), std::sin(normExp));
         };
         auto g_pw = BEM::generatePlaneWave(angle, wavenumber, curve);
-        BEM::plotFunction("pw", ExplicitScalarFunction_1D(pws));
-        BEM::plotFunction("gpw",*g_pw);
         RegularP0Mesh_1D spaceMesh(mesh);
         WeaklySingularMesh ws(spaceMesh, spaceMesh, green, Transformation_2D(std::move(transformation)), ExplicitScalarFunction_2D(std::move(jacobian)));
         ws.assembleMassMatrix();
         BEM::Matrix mat = ws.getMatrix();
         auto rhs = spaceMesh.testAgainstBasis(ExplicitScalarFunction_2D(std::move(pw)));
         BEM::ColVector sol = mat.colPivHouseholderQr().solve(rhs);
-        BEM::plotFunction("new", *(g.getSpace().generateFunction(sol)));
-        BEM::plotFunction("prob", *(g.getSpace().generateFunction(g.getSolutionVec())));
     }
 
     

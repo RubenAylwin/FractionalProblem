@@ -7,9 +7,11 @@
 *.o
 *.obj
 
-# Folder
-build
-test/build
+# Build directories
+build/
+build*/
+cmake-build-*/
+test/build/
 
 # Precompiled Headers
 *.gch
@@ -23,6 +25,7 @@ test/build
 
 # Compiled Dynamic libraries
 *.so
+*.so.*
 *.dylib
 *.dll
 
@@ -44,5 +47,34 @@ test/build
 # debug information files
 *.dwo
 
-# Old
+# CMake-generated files (in case cmake is ever run outside build/)
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+compile_commands.json
+
+# CTest
+Testing/
+
+# Old / backup files
 *.*~
+*~
+
+# Editor lock/autosave files (Emacs, Vim, etc.)
+\#*\#
+.\#*
+*.swp
+*.swo
+
+# IDE folders
+.vscode/
+.idea/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+Desktop.ini
+
+# Python scripts
+*.py

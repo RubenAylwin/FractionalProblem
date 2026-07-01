@@ -1,4 +1,0 @@
-add_library(Empirica
-EmpiricalInterpolation.cc
-EmpiricalInterpolation.h
-randomized_svd.h

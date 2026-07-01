@@ -239,7 +239,7 @@ LogQuad_1D::LogQuad_1D(unsigned n) :
  * @brief: Constructor. Requires only number of points.
  */
 AdaptiveTrapezoidal_1D::AdaptiveTrapezoidal_1D(double tolerance) :
-    Integrator_1D(-1, 1, 1),
+    Integrator_1D(0, 1, 1),
     _tolerance(tolerance)
 {
     msg(5) << "start AdaptiveTrapezoidal_1D::AdaptiveTrapezoidal_1D::Constructor" << endMsg;

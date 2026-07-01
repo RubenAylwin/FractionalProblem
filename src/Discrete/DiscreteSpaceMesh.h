@@ -12,7 +12,7 @@
 #include <string>
 #include <unordered_map>
 #include <mutex>
-#include <cassert>
+#include <stdexcept>
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////
 // This file contains declarations for the base clases of discrete spaces defined over 1D meshes. //
@@ -49,11 +49,11 @@ public:
             _coefficients[i] = _coefficients[i] * other._coefficients[i];
         }};
     virtual DiscreteFunctionMesh &derivative(void) const {
-        assert(false and "Not implemented yet.");
+        throw std::logic_error("DiscreteFunctionMesh::derivative() is not implemented for this type.");
     };
     virtual DiscreteFunctionMesh &derivative([[maybe_unused]] int order) const {
-        assert(false and "Not implemented yet.");
-        return derivative();};
+        throw std::logic_error("DiscreteFunctionMesh::derivative(int) is not implemented for this type.");
+    };
 protected:
     const Mesh1D &_mesh;
     std::vector<unsigned> _support;
