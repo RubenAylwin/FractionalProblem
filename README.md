@@ -1,8 +1,13 @@
 # FractionalProblem
-A C++ finite-element solver for boundary value problems involving the
-**Riemann-Liouville fractional derivative**, together with a **Reduced
-Basis (RB)** framework for evaluating families of such problems quickly
-across a range of parameters.
+
+[![Build & Test](https://github.com/RubenAylwin/FractionalProblem/actions/workflows/build.yml/badge.svg)](https://github.com/RubenAylwin/FractionalProblem/actions/workflows/build.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+C++ code for the resolution of problems involving the Riemann-Liouville fractional derivative and Reduced Basis for the same problem.
+
+## Background
+
+The Riemann-Liouville derivative generalizes ordinary differentiation to non-integer order and appears in models of anomalous diffusion, viscoelastic materials, and long-range interactions. Because it is a non-local operator, discretizing it directly produces dense (rather than sparse) stiffness matrices, and a new full finite-element solve is normally needed for every new choice of parameters. This project provides both a direct solver (`Problem 1`) and a Reduced Basis approach (`Problem 2`/`Problem 3`) that builds a low-dimensional approximation via a weak greedy algorithm, so repeated queries across a parameter range don't each require a full assembly.
 
 ## Dependencies
 
@@ -64,4 +69,4 @@ E.g. To evaluate RBa for the problem with the coefficients $d(x) = \alpha+\beta\
 ./VP --Problem 3 --dt trig --qt trig --d 4. .5 --q 0. 0. 1. --dv 1. .5 --qv 0. 0. 1. --rhs 0. 1. -1. --slist 60 75 90 --mn 200 --rbp 10
 ```
 This will print out messages with the approximation information for each order.
-We recommend the following environment variable to be set to "true": PARALLELIZE_MATRIX_CONSTRUCTION. This allows parallel computation of stiffness matrices in the FEM. 
+We recommend the following environment variable to be set to "true": PARALLELIZE_MATRIX_CONSTRUCTION. This allows parallel computation of stiffness matrices in the FEM.
