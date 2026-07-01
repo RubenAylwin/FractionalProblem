@@ -6,11 +6,6 @@ on:
   pull_request:
     branches: [main]
 
-env:
-  # Kept in one place so bumping the required Eigen version only means
-  # editing this line (and CMakeLists.txt's find_package(Eigen3 ...) call).
-  EIGEN_VERSION: "5.0.1"
-
 jobs:
   build-and-test:
     runs-on: ubuntu-24.04
@@ -18,37 +13,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Install system dependencies
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y libboost-program-options-dev libtbb-dev cmake g++
-
-      # Eigen ${{ env.EIGEN_VERSION }} is required (BDCSVD's Options
-      # template parameter isn't available in Eigen 3.4, which is what
-      # Ubuntu's apt repositories currently ship). Eigen is header-only,
-      # so "building" it is really just installing headers + the CMake
-      # package config files that find_package(Eigen3) looks for.
-      - name: Cache Eigen build
-        id: cache-eigen
-        uses: actions/cache@v4
-        with:
-          path: ${{ github.workspace }}/eigen-install
-          key: eigen-${{ env.EIGEN_VERSION }}-${{ runner.os }}
-
-      - name: Build & install Eigen ${{ env.EIGEN_VERSION }}
-        if: steps.cache-eigen.outputs.cache-hit != 'true'
-        run: |
-          curl -sL "https://gitlab.com/libeigen/eigen/-/archive/${EIGEN_VERSION}/eigen-${EIGEN_VERSION}.tar.gz" -o eigen.tar.gz
-          tar xf eigen.tar.gz
-          cmake -S "eigen-${EIGEN_VERSION}" -B eigen-build \
-            -DCMAKE_INSTALL_PREFIX="${{ github.workspace }}/eigen-install" \
-            -DBUILD_TESTING=OFF
-          cmake --install eigen-build
+          sudo apt-get install -y libboost-program-options-dev libeigen3-dev libtbb-dev cmake g++
 
       - name: Configure
-        run: >
-          cmake -B build -DCMAKE_BUILD_TYPE=Release
-          -DCMAKE_PREFIX_PATH="${{ github.workspace }}/eigen-install"
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: cmake --build build -j"$(nproc)"

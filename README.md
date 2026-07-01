@@ -1,5 +1,8 @@
 # FractionalProblem
-C++ code for the resolution of problems involving the Riemann-Liouville fractional derivative and Reduced Basis for the same problem.
+A C++ finite-element solver for boundary value problems involving the
+**Riemann-Liouville fractional derivative**, together with a **Reduced
+Basis (RB)** framework for evaluating families of such problems quickly
+across a range of parameters.
 
 ## Dependencies
 

@@ -90,7 +90,7 @@ void EmpiricalInterpolation::computeSVD(void)
         _U.reset(new BEM::Matrix(rsvd.matrixU()));
         _singVals = rsvd.singularValues();
     } else {
-        Eigen::BDCSVD<BEM::Matrix, Eigen::ComputeThinU> SVD(dataMatrix);
+        Eigen::BDCSVD<BEM::Matrix> SVD(dataMatrix, Eigen::ComputeThinU);
         _singVals = SVD.singularValues();
         _U.reset(new BEM::Matrix(SVD.matrixU()));
     }

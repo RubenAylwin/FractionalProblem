@@ -10,7 +10,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 find_package(Boost 1.74 COMPONENTS program_options REQUIRED)
 find_package(TBB REQUIRED)
-find_package(Eigen3 5.0 REQUIRED)
+find_package(Eigen3 REQUIRED)
 
 add_subdirectory(src)
 

@@ -59,7 +59,7 @@ private:
     BEM::Matrix Q = FindRandomizedRange(A, rank + oversamples, iter);
     BEM::Matrix B = Q.adjoint() * A;
     // Compute the SVD on the thin matrix (much cheaper than SVD on original)
-    Eigen::BDCSVD<BEM::Matrix, Eigen::ComputeThinU> svd(B);
+    Eigen::BDCSVD<BEM::Matrix> svd(B, Eigen::ComputeThinU);
     U_ = (Q * svd.matrixU()).block(0, 0, A.rows(), rank);
     //V_ = svd.matrixV().block(0, 0, A.cols(), rank);
     S_ = svd.singularValues();
