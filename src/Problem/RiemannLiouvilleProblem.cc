@@ -14,6 +14,9 @@
 #include <Eigen/SVD>
 #include <RegularP1Mesh.h>
 #include <FractionalDerivative.h>
+#include <random>
+#include <mutex>
+#include <tbb/tbb.h>
 
 useMessages("RIE_PROB");
 
@@ -75,7 +78,7 @@ void GreedyHelper::loadBasis(BEM::ColVector newBasis)
         }
     }
 
-    msg(5) << "end GreedyHelper::loadBasis" << endMsg;
+    msg(5) << "end greedyhelper::loadBasis" << endMsg;
 }
 
 /**
@@ -168,8 +171,14 @@ double GreedyHelper::errorAtPoint(const std::vector<double> &point)
             errorRhsRhs += point[_hifiMatrices.size() + i]*point[_hifiMatrices.size() + j]*_RhsRhsProd[i][j];
         }
     }
-
-    return std::sqrt(std::abs(errorMatMat + errorMatRhs + errorRhsRhs))/(_infSupEst(point));
+    double error = std::sqrt(std::abs(errorMatMat + errorMatRhs + errorRhsRhs));
+    double estimate = _infSupEst(point);
+    if (estimate < 0) {
+        msg(5) << "WARNING: Coercivity estimate is negative (" << estimate << "). Probably chose ill defined parameters. Will be replaced by absolute value."  << endMsg;
+        estimate = -estimate;
+    }
+    
+    return error/estimate;
 }
 
 /**
@@ -295,25 +304,38 @@ std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::In
     //Points
     std::vector<std::vector<double>> quadPoints;
     std::vector<double> errors_return;
-
-    {
-        msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy  Generating points" << endMsg;
-        std::vector<std::vector<double>> toTensPoints(_dimensionQ + _dimensionD + _dimensionF, std::vector<double>());
+    int dimension = _dimensionQ + _dimensionD + _dimensionF;
+    if (BEM::getEnv<bool>(std::string("TENSORIZE_RBP"))) {
+        msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy  Generating tensorized points" << endMsg;
+        std::vector<std::vector<double>> toTensPoints(dimension, std::vector<double>());
         GaussLegendre_1D integ(points);
         for (size_t i = 0; i < _dimensionQ + _dimensionD + _dimensionF; ++i) {
             // If a dimension is given same lower and upper limit, then we dont tensorize there.
             // Bit of a hacky solution to being able to give functions that will have no real
             // parameter on the parametrized problem.
-            if (limits[i].first == limits[i].second) {
-                toTensPoints[i] = std::vector<double>{limits[i].first};
+            auto [a, b] = limits[i];
+            if (a == b) {
+                toTensPoints[i] = std::vector<double>{a};
             } else {
-                toTensPoints[i] = integ.points(limits[i].first, limits[i].second);
+                toTensPoints[i] = integ.points(a, b);
             }
-
+            
         }
         msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy  begin tensorization" << endMsg;
         quadPoints = BEM::tensorize(toTensPoints);
         msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy  done with tensorization" << endMsg;
+    } else {
+        std::uniform_real_distribution<double> unif(0., 1.);
+        std::mt19937 rng((std::random_device())());
+        msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy  Generating MC Points." << endMsg;
+        for (size_t i = 0; i < points; ++i) {
+            quadPoints.push_back(std::vector<double>(dimension, 0.));
+            msg(10) << "Riemannliouvillemeshfactory::Traingreedy  Generating " << std::to_string(i) <<" MC Point." << endMsg;
+            for (size_t j = 0; j < dimension; ++j) {
+                auto &[a, b] = limits[j];
+                quadPoints[i][j] = a + (b - a)*unif(rng);
+            }
+        }
     }
     
     // HiFi Rhs
@@ -361,29 +383,35 @@ std::vector<double> RiemannLiouvilleMeshFactory::trainGreedy(std::vector<BEM::In
     std::unique_ptr<std::vector<double>> estimators(new std::vector<double>{});
     std::unique_ptr<std::vector<double>> errors(new std::vector<double>{});
     msg(6) << "RiemannLiouvilleMeshFactory::trainGreedy Beginning Loop" << endMsg;
-    while (maxError > tolerance) {
+    while (maxError > tolerance and counter < 20) {
         maxError = 0.0;
         std::vector<double> toAdd;
         msg(7) << "RiemannLiouvilleMeshFactory::trainGreedy Start Error Computation" << endMsg;
-        for (const auto &point : quadPoints) {
-            double error = greedy.errorAtPoint(point);
-            msg(8) << "RiemannLiouvilleMeshFactory::trainGreedy Error " << error << endMsg;
-            if (error > maxError) {
-                maxError = error;
-                toAdd = point;
+        std::vector<double> errorVector(quadPoints.size(), -1);
+        tbb::parallel_for(tbb::blocked_range<int>(0, quadPoints.size()), [&](tbb::blocked_range<int> r) {
+            for (int i = r.begin(); i < r.end(); ++i){
+                auto point = quadPoints[i];
+                double error = greedy.errorAtPoint(point);
+                errorVector[i] = error;
             }
+        });
+
+        for (int i = 0; i < quadPoints.size(); ++i) {
+            double error = errorVector[i];
+                msg(8) << "RiemannLiouvilleMeshFactory::trainGreedy Error " << error << endMsg;
+                if (error > maxError) {
+                    maxError = error;
+                    toAdd = quadPoints[i];
+                }            
         }
         msg(5) << "RiemannLiouvilleMeshFactory::trainGreedy Error Computation Found " << maxError << " as max error" << endMsg;
         BEM::ColVector addedSolution = BEM::linearCombination(completeMatrices, std::vector<double>(toAdd.begin(), toAdd.begin() + _dimensionQ + _dimensionD)).colPivHouseholderQr().solve(BEM::linearCombination(completeRhs, std::vector<double>(toAdd.begin() + _dimensionQ + _dimensionD, toAdd.end())));
         errors_return.push_back(maxError);
-        if (maxError > tolerance) {
+        if (maxError > tolerance and counter < 20) {
             auto realSolution = _space->generateFunction(addedSolution);
             auto &realSolutionDer = realSolution->derivative(_order);
             levelIf(1) {
-                // BEM::ColVector residual = BEM::linearCombination(completeMatrices, std::vector<double>(toAdd.begin(), toAdd.begin() + _dimensionQ + _dimensionD))*greedy.solveAtPoint(toAdd) - BEM::linearCombination(completeRhs, std::vector<double>(toAdd.begin() + _dimensionQ + _dimensionD, toAdd.end()));
-                // double realError = std::sqrt(std::abs(residual.dot(lfMat.colPivHouseholderQr().solve(residual))));
-                // msg(1) << "Max Residual error with " << counter << " bases : " << realError << endMsg;
-                msg(2) << "Max Estimated error with " << counter << " bases: " << maxError << endMsg;
+                msg(2) << "Max Estimated error with " << counter << " bases: " << maxError << " (tolerance: " << tolerance << ")" << endMsg;
                 if(counter){
                     auto greedySolVec = greedy.solveAtPoint(toAdd);
                     auto greedySolution = _space->generateFunction(greedySolVec);

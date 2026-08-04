@@ -492,7 +492,7 @@ void BEM::plotFunction(std::string fileName, const DiscreteFunctionMesh &functio
     myFile.close();
 }
 
-std::vector<std::vector<double>> BEM::tensorize(const std::vector<std::vector<double>> points)
+std::vector<std::vector<double>> BEM::tensorize(const std::vector<std::vector<double>> &points)
 {
     std::vector<size_t> position(points.size(), 0);
     int totalPoints = 1;

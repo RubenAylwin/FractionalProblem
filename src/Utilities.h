@@ -57,7 +57,7 @@ namespace BEM {
     Support1DL remove(const BEM::Support1DL &sup1, const BEM::Support1DL &sup2);
     void plotFunction(std::string fileName, const ScalarFunctionBase_1D &function);
     void plotFunction(std::string fileName, const DiscreteFunctionMesh &function, const Mesh1D &mesh);
-    std::vector<std::vector<double>> tensorize(const std::vector<std::vector<double>> points);
+    std::vector<std::vector<double>> tensorize(const std::vector<std::vector<double>> &points);
     std::vector<BEM::Matrix> reduceMatrices(const std::vector<BEM::Matrix> &fullMatrices, const BEM::Matrix &reducedBasis);
     template <typename T, typename S>
     T affineCombination(std::vector<T> vec, S point)
